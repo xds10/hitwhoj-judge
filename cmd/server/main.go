@@ -3,9 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
+	"hitwh-judge/internal/dao"
 
 	"hitwh-judge/internal/conf"
-	"hitwh-judge/internal/dao"
 	"hitwh-judge/internal/server"
 	"hitwh-judge/pkg/jwt"
 	"hitwh-judge/pkg/logging"
@@ -27,10 +27,12 @@ func main() {
 	}
 	defer logger.Sync()
 
-	dao.MustInitMySQL(cfg)  // 初始化 MySQL 连接
-	dao.MustInitRedis(cfg)  // 初始化 Redis
-	jwt.MustInit(cfg)       // 初始化 jwt
-	snowflake.MustInit(cfg) // 初始化 snowflake
+	//dao.MustInitMySQL(cfg)  // 初始化 MySQL 连接
+	//dao.MustInitRedis(cfg)  // 初始化 Redis
+	dao.MustInitPostgres(cfg) // 初始化 Postgres 连接
+	dao.MustInitMinIO(cfg)    // 初始化 MinIO 连接
+	jwt.MustInit(cfg)         // 初始化 jwt
+	snowflake.MustInit(cfg)   // 初始化 snowflake
 
 	// 初始化路由
 	r := server.SetupRoutes(cfg)
