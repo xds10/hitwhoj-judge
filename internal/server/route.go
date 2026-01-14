@@ -1,6 +1,7 @@
 package server
 
 import (
+	"hitwh-judge/internal/handler"
 	"hitwh-judge/internal/handler/calc"
 	"hitwh-judge/pkg/logging"
 	"net/http"
@@ -25,6 +26,7 @@ func SetupRoutes(cfg *viper.Viper) *gin.Engine {
 	apiV1 := r.Group("/api/v1")
 	{
 		apiV1.GET("/add", calc.AddHandler())
+		apiV1.POST("/task/add", handler.AddTaskHandler)
 	}
 
 	r.NoRoute(func(c *gin.Context) {

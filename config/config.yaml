@@ -1,7 +1,7 @@
 server:
   name: "hitwhoj-judge"
   mode: "dev"
-  port: 8089
+  port: 53333
   version: "v0.0.1"
 
 snowflake:
@@ -35,7 +35,7 @@ postgres:
   host: 127.0.0.1
   port: 5433
   user: postgres
-  password: 123456
+  password: hitwhoj@123456
   dbname: hitwhoj_rebirth
   max_idle_conns: 10    # 最大空闲连接
   max_open_conns: 100   # 最大打开连接
@@ -49,8 +49,8 @@ redis:
   pool_size: 10
 
 minio:
-  endpoint: 127.0.0.1:9001    # MinIO 服务地址（IP+端口）
-  access_key: minioadmin      # 访问密钥（MinIO 登录用户名）
-  secret_key: minioadmin      # 秘密密钥（MinIO 登录密码）
+  endpoint: 192.168.0.174:9001    # MinIO 服务地址（IP+端口）
+  access_key: hitwhojadmin      # 访问密钥（MinIO 登录用户名）
+  secret_key: hitwhoj@minio123      # 秘密密钥（MinIO 登录密码）
   use_ssl: false              # 本地测试关闭 SSL，生产环境根据实际配置
   region: ""                  # 区域，默认空即可（MinIO 单机版无需配置）

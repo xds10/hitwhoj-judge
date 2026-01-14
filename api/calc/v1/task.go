@@ -6,7 +6,7 @@ type TaskReq struct {
 	StackLimit      int64 `json:"stack_limit" binding:"required"`
 	ProcLimit       int64 `json:"proc_limit" binding:"required"`
 	CodeFile        int   `json:"code_file" binding:"required"`
-	IsSpecial       bool  `json:"is_special" binding:"required"`
+	IsSpecial       *bool `json:"is_special" binding:"required"`
 	SpecialCodeFile int   `json:"special_code_file" `
 }
 
