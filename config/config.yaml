@@ -1,56 +1,56 @@
 server:
   name: "hitwhoj-judge"
-  mode: "dev"
-  port: 53333
+  mode: "${SERVER_MODE:-dev}"  # 占位符+默认值：没配置则用dev
+  port: "${SERVER_PORT:-53333}"
   version: "v0.0.1"
 
 snowflake:
   start_time: "2025-07-01"
-  machine_id: 1
+  machine_id: "${SNOWFLAKE_MACHINE_ID:-1}"
 
 jwt:
-  access_secret: "夏天夏天悄悄过去留下小秘密"
-  refresh_secret: "压心底压心底不能告诉你"
+  access_secret: "${JWT_ACCESS_SECRET}"  # 无默认值，必须在.env配置
+  refresh_secret: "${JWT_REFRESH_SECRET}"
   access_expire_seconds: 3600
   refresh_expire_seconds: 86400
 
 log:
-  level: "info"
+  level: "${LOG_LEVEL:-info}"
   filename: "log/server.log"
   max_size: 200
   max_age: 30
   max_backups: 7
 
 mysql:
-  host: 127.0.0.1
-  port: 3306
-  user: "user"
-  password: "password"
-  dbname: "dbname"
+  host: "${MYSQL_HOST:-127.0.0.1}"
+  port: "${MYSQL_PORT:-3306}"
+  user: "${MYSQL_USER:-user}"
+  password: "${MYSQL_PASSWORD}"  # 敏感字段，必须配置
+  dbname: "${MYSQL_DBNAME:-dbname}"
   max_open_conns: 200
   max_idle_conns: 50
   max_lifetime: 1h
 
 postgres:
-  host: 127.0.0.1
-  port: 5433
-  user: postgres
-  password: hitwhoj@123456
-  dbname: hitwhoj_rebirth
-  max_idle_conns: 10    # 最大空闲连接
-  max_open_conns: 100   # 最大打开连接
-  max_lifetime: 30m     # 连接最大存活时间
+  host: "${PG_HOST:-127.0.0.1}"
+  port: "${PG_PORT:-5433}"
+  user: "${PG_USER:-postgres}"
+  password: "${PG_PASSWORD}"  # 敏感字段
+  dbname: "${PG_DBNAME:-hitwhoj_rebirth}"
+  max_idle_conns: 10
+  max_open_conns: 100
+  max_lifetime: 30m
 
 redis:
-  host: 127.0.0.1
-  port: 6379
-  password: ""
+  host: "${REDIS_HOST:-127.0.0.1}"
+  port: "${REDIS_PORT:-6379}"
+  password: "${REDIS_PASSWORD:-}"  # 默认空
   db: 0
   pool_size: 10
 
 minio:
-  endpoint: 192.168.0.174:9001    # MinIO 服务地址（IP+端口）
-  access_key: hitwhojadmin      # 访问密钥（MinIO 登录用户名）
-  secret_key: hitwhoj@minio123      # 秘密密钥（MinIO 登录密码）
-  use_ssl: false              # 本地测试关闭 SSL，生产环境根据实际配置
-  region: ""                  # 区域，默认空即可（MinIO 单机版无需配置）
+  endpoint: "${MINIO_ENDPOINT:-192.168.0.174:9001}"
+  access_key: "${MINIO_ACCESS_KEY}"  # 敏感字段
+  secret_key: "${MINIO_SECRET_KEY}"
+  use_ssl: "${MINIO_USE_SSL:-false}"
+  region: ""
