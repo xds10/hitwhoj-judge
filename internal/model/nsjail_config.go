@@ -1,15 +1,14 @@
-package task
+package model
 
-// JudgeConfig 评测配置（可外部调整）
-type JudgeConfig struct {
+// NsJailConfig NsJail 配置
+type NsJailConfig struct {
 	TimeLimit   int    // 时间限制（秒）
 	MemoryLimit int    // 内存限制（MB）
 	NsJailPath  string // nsjail可执行文件路径
 	GCCPath     string // gcc可执行文件路径
 }
 
-// 默认配置
-var DefaultJudgeConfig = JudgeConfig{
+var DefaultJudgeConfig = NsJailConfig{
 	TimeLimit:   1,
 	MemoryLimit: 64,
 	NsJailPath:  "nsjail",

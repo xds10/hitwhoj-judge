@@ -9,5 +9,5 @@ type JudgeResult struct {
 	Expected string // 期望输出
 	TimeUsed time.Duration
 	MemUsed  uint64
-	ErrMsg   string // 错误信息（如运行时错误）
+	Error    string // 错误信息（如运行时错误）
 }
