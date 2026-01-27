@@ -127,7 +127,7 @@ func main() {
 	snowflake.MustInit(cfg)   // 初始化 snowflake
 
 	// 查询PostgreSQL所有表
-	// listPostgresTables(cfg, logger)
+	listPostgresTables(cfg, logger)
 	listMinIOBuckets(logger)
 
 	// 初始化路由

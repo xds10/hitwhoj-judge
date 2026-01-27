@@ -39,7 +39,6 @@ int main() {
 
 	// 输出评测结果
 	fmt.Printf("评测状态: %s\n", result.Status)
-	fmt.Printf("程序输出: %s\n", result.Output)
 	if result.Error != "" {
 		fmt.Printf("错误信息: %s\n", result.Error)
 	}

@@ -1,0 +1,99 @@
+A + B 问题	2.in	82964	df30015167d21b7455b66db9771a7293
+A + B 问题	3.in	82965	a4abe9f996e882edcc9b54463bb12ee5
+A + B 问题	LOJ_AnniversaryI.png	82966	791fd6c53a6f4ec73ae465df5cb418ea
+A + B 问题	config.yaml	82967	dc2b3f3d8ec38073072145cbec20ffcd
+A + B 问题	2.out	82968	7337b34ccdeb0a350a86528e8c4ead4d
+A + B 问题	3.out	82969	e1117604b11d2fcc1cdd7d93d1269e3d
+A + B 问题	1.out	82970	6d7fce9fee471194aa8b5b6e47267f03
+A + B 问题	1.in	82971	f303b7d2f2b87f9e16df05e2bca7c409
+复读机	copycat6.in	82976	3304994509c5b337659871b296aa92ea
+复读机	run.py	82977	ae7420a06326169a0ef5a018ad6aa20b
+复读机	copycat18.in	82978	ece88b4936257dc30641e93984dccdfa
+复读机	copycat2.in	82979	c8751906534140bf90999524742e610e
+复读机	copycat3.in	82980	f12c5a4212f1cd8e0f1b7bee5d9ce98a
+复读机	copycat7.in	82981	ed9784ab59e2d65660ea249ae0867bf7
+复读机	copycat16.in	82982	d3463d86988aff3741c92ca60ff191c4
+复读机	copycat4.ans	82983	d9f3a74629631dea4b4fc479387a6c34
+复读机	copycat18.ans	82984	2e53c1c7df823db3ae533b6f2f1a2ea0
+复读机	copycat5.ans	82985	dc24c284b91e7723b8d7e7418fda2aa7
+复读机	copycat12.in	82986	b07172a0e1d3c152841ef2d05cdabfaa
+复读机	copycat7.ans	82987	c456ed81bfd90cb45d38595ec43a8f1b
+复读机	copycat6.ans	82988	48a7d8cb028882b0eb00004ed87c70bf
+复读机	copycat8.in	82989	8207d8762d4955ed8fb077946b8d9652
+复读机	copycat13.in	82990	b68240bc1efc2cfaeb1584079dd4d3f0
+复读机	config.yaml	82991	121583f25dcd89a3fb322e04b853866c
+复读机	copycat2.ans	82992	da2d6e5e11d8c79079c3f5733883b22c
+复读机	copycat3.ans	82993	d09eb59109213a8d0761c5b99d17584d
+复读机	copycat9.in	82994	1aab00f3fd7b25767e4d5c4df1b71212
+复读机	copycat17.in	82995	557ea4b538c75710c48ee53970591ca5
+复读机	copycat1.ans	82996	e11c0ba7e9a0019977c7f10b382c81bd
+复读机	copycat10.in	82997	947128d717eff9af61f2af28674250ca
+复读机	copycat10.ans	82998	3327fdb58ec0b9278fe65b7e272ce8bc
+复读机	copycat11.ans	82999	ca1cb7fae2021af806a558d03947a9e7
+复读机	copycat14.in	83000	7e889fef90e26ab69b321d83772c211c
+复读机	copycat13.ans	83001	15a73cf0481aa926a8ccab2e1bada20d
+复读机	copycat12.ans	83002	32ffc0e430af23c188fb141e36110914
+复读机	copycat15.in	83003	96901bdf2c2eec7bc707d9b9f6a3632e
+复读机	copycat16.ans	83004	fbae5c2d85bd2c9037f73202353b9c2d
+复读机	copycat17.ans	83005	e8685999f73ab10ac45b2da40cacce32
+复读机	copycat11.in	83006	deb14f01811b304372c04b2f73f4875e
+复读机	copycat8.ans	83007	85e5e726abe1b0aba918458b2d4c1cfd
+复读机	copycat15.ans	83008	03be9d7c9499299fbae84317e172d5c5
+复读机	copycat14.ans	83009	d0c31fd73ce14aaec5e621550732b114
+复读机	copycat9.ans	83010	db70ec13e367b6a61a7ea2efda6a851e
+复读机	copycat4.in	83011	39b7e99a6b7df6a7cc0bd887aa28a904
+复读机	copycat5.in	83012	b9af22da25be6ab076d0563eb14fe7a8
+复读机	copycat1.in	83013	b2b26db5cc1583b4e19550e13d8c6842
+Quine	spj.js	83014	e733efef8cb5aeecd6d0aa8de735496a
+Quine	config.yaml	83015	1e9b46846cbd369aa583dff289f68bd5
+Quine	data.in	83016	68b329da9893e34099c7d8ad5cb9c940
+Quine	spj_nodejs.js	83017	5e78a5f415b73f062b9f28985ad797f0
+Quine	data.out	83018	68b329da9893e34099c7d8ad5cb9c940
+Quine	checker.py	83019	61f0a1ff93b0802c707cc067a249e179
+猜数字 1	date4.in	83020	4fbafd6948b6529caa2b78e476359875
+猜数字 1	date1.in	83021	73b4c20e598d6b495de7515ad4ea2fdc
+猜数字 1	date5.in	83022	2fc57d6f63a9ee7e2f21a26fa522e3b6
+猜数字 1	date3.out	83023	ac104a38db6bda928ba93dbafa0201d2
+猜数字 1	date2.out	83024	a19f8f2abc5cbf0eb58bfcf70e4572b9
+猜数字 1	date1.out	83025	256537362f6325db7461eda1e1db6959
+猜数字 1	date5.out	83026	b026324c6904b2a9cb4b88d6d61c81d1
+猜数字 1	config.yaml	83027	6053636b3c7e4b8d6e83d99cd62a8c4b
+猜数字 1	date4.out	83028	924dc9c42c40dd0cedc8bd715e5aee45
+猜数字 1	chk.cc	83029	bccd91829278b2524046acf8f7a5effb
+猜数字 1	date2.in	83030	8d7e35631f830f2c5b9685450a2b8568
+猜数字 1	date3.in	83031	e760668b6273d38c832c153fde5725da
+猜数字 1	additional_file_date4.in	83032	dfb71d6d6a96834892436b427050b3f4
+猜数字 1	additional_file_date1.in	83033	1a80f1e907484396f67e0a9105089be2
+猜数字 1	additional_file_date5.in	83034	c7a67e16c4c24c1a5e6f4695d14fb096
+猜数字 1	additional_file_date2.in	83035	4dc07dc79c1009555de91941d347afb7
+猜数字 1	additional_file_date3.in	83036	ab55ac786619a041a68635cc3bd842e7
+猜数字 2	data5.in	83037	f7e26b1e5ef0b3ceecfdc2e78b525bbc
+猜数字 2	data1.in	83038	cd286ce977bbf0f10aed62ccc4de1cdf
+猜数字 2	interactor.cpp	83039	63d131a0fb75989cbee335e6377104a7
+猜数字 2	runner.c	83040	148a8c30de82523c1effe397bc91e88c
+猜数字 2	data4.in	83041	de1975767ef39fd1c79841a28aa99dc2
+猜数字 2	interaction.h	83042	8395b77e7617e034d1a901000203bf95
+猜数字 2	maker.py	83043	ce887217d1bcae27a1021247db359922
+猜数字 2	config.yaml	83044	0413d673c7bb3ce2022d5a6a9c339e96
+猜数字 2	data3.in	83045	7e179b07b6e81a4a9feab426c6705456
+猜数字 2	std.cpp	83046	23ad58a07ff319fa3b68beffe1021ef7
+猜数字 2	data2.in	83047	143851a9d0966c67cf65b425c1fa1c36
+猜数字 2	additional_file_interactor.cpp	83048	fd4ae9e73bbec6d2452e06f7156af7a2
+猜数字 2	additional_file_interaction.h	83049	8395b77e7617e034d1a901000203bf95
+Input Test	t1.out	83050	a5ea0ad9260b1550a14cc58d2c39b03d
+Input Test	t4.in	83051	2b0e76688e6c8411b18c01fd60959cc9
+Input Test	t2.out	83052	a0b6c3e24f6f2433b030951bc488f759
+Input Test	t3.out	83053	fe737d1969a3db056cb8d1d2f850f826
+Input Test	config.yaml	83054	3ecb905dadd55d5d8bfa4ba05de160e7
+Input Test	t6.out	83055	dd7337f1f74fa506a01272223b16fc8c
+Input Test	t1.in	83056	d1cd8410c9c10d616aed80fd3eca91e8
+Input Test	t4.out	83057	50a88d64ac61090364565a1a5bb7ee5f
+Input Test	t5.out	83058	de805f39a6f51ace5f3738831f59dfdb
+Input Test	t5.in	83059	46cb10d4122ab6e41acbb6138a378aae
+Input Test	t2.in	83060	d2b5946d33e6623a9e8fe5da766dc397
+Input Test	t3.in	83061	e76b09ebe84f58c05376e7babecbfab9
+Input Test	t6.in	83062	44dfecdb6e6cc558f33d9812aa3bbeb7
+你好，世界！	config.yaml	82972	7920d1c31d3b5270ab7f40d82bf4ec69
+你好，世界！	chk.cc	82973	1e02a99f57b99efd7ed77ea16f70da2c
+你好，世界！	1.out	82974	bea8252ff4e80f41719ea13cdf007273
+你好，世界！	1.in	82975	d41d8cd98f00b204e9800998ecf8427e

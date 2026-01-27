@@ -26,9 +26,9 @@ func normalizeString(s string) string {
 // Judge 核心评测函数
 // code: 用户代码, input: 输入数据, expectedOutput: 标准输出
 // config: 评测配置（可选，不传则用默认配置）
-func Judge(code, input, expectedOutput string, config ...model.NsJailConfig) (*model.JudgeResult, error) {
+func Judge(code, input, expectedOutput string, config ...model.TaskConfig) (*model.JudgeResult, error) {
 	// 使用默认配置（如果未传入）
-	judgeConfig := model.DefaultJudgeConfig
+	judgeConfig := model.DefaultTaskConfig
 	if len(config) > 0 {
 		judgeConfig = config[0]
 	}
@@ -65,19 +65,18 @@ func Judge(code, input, expectedOutput string, config ...model.NsJailConfig) (*m
 		zap.L().Error("编译代码失败", zap.Error(err), zap.String("compile_err", compileErr))
 		return &model.JudgeResult{
 			Status: "CE",
-			Output: "",
 			Error:  compileErr,
 		}, nil
 	}
 
 	// 4. 在沙箱中运行程序
-	sanbox := runner.NewRunner(runner.NsJail, judgeConfig.NsJailPath)
+	nsJail := model.DefaultSandboxConfig
+	sanbox := runner.NewRunner(runner.NsJail, nsJail.Path)
 	programOutput, runErrOutput, runStatus, err := sanbox.RunInSandbox(exePath, input, judgeConfig.TimeLimit, judgeConfig.MemoryLimit)
 	if err != nil {
 		zap.L().Error("沙箱运行程序失败", zap.Error(err), zap.String("run_err", runErrOutput))
 		return &model.JudgeResult{
 			Status: runStatus,
-			Output: programOutput,
 			Error:  runErrOutput,
 		}, nil
 	}
@@ -89,7 +88,6 @@ func Judge(code, input, expectedOutput string, config ...model.NsJailConfig) (*m
 			zap.L().Info("评测通过（AC）", zap.String("output", programOutput))
 			return &model.JudgeResult{
 				Status: "AC",
-				Output: programOutput,
 				Error:  "",
 			}, nil
 		} else {
@@ -97,7 +95,6 @@ func Judge(code, input, expectedOutput string, config ...model.NsJailConfig) (*m
 			zap.L().Info("答案错误（WA）", zap.String("error", errMsg))
 			return &model.JudgeResult{
 				Status: "WA",
-				Output: programOutput,
 				Error:  errMsg,
 			}, nil
 		}
@@ -107,7 +104,6 @@ func Judge(code, input, expectedOutput string, config ...model.NsJailConfig) (*m
 	zap.L().Info("程序运行异常", zap.String("status", runStatus), zap.String("error", runErrOutput))
 	return &model.JudgeResult{
 		Status: runStatus,
-		Output: programOutput,
 		Error:  runErrOutput,
 	}, nil
 }
