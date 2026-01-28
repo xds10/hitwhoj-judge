@@ -37,7 +37,7 @@ type TestCaseResult struct {
 
 // JudgeResult 完整评测结果
 type JudgeResult struct {
-	TaskID        string           `json:"task_id"`         // 对应任务ID
+	TaskID        int64            `json:"task_id"`         // 对应任务ID
 	Status        JudgeStatus      `json:"status"`          // 最终评测状态
 	TotalScore    int              `json:"total_score"`     // 总得分
 	TotalTimeUsed time.Duration    `json:"total_time_used"` // 总耗时

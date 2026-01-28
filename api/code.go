@@ -15,6 +15,8 @@ const (
 	CodeInvalidToken ResCode = 4200
 
 	CodeServerBusy ResCode = 5000
+
+	CodeInternalError ResCode = 5001
 )
 
 var codeMsgMap = map[ResCode]string{

@@ -2,21 +2,23 @@ package model
 
 // TestCase 单个测试用例
 type TestCase struct {
-	Input     string `json:"input"`      // 输入数据
-	Output    string `json:"output"`     // 期望输出
-	Score     int    `json:"score"`      // 测试点分值
-	IsSpecial bool   `json:"is_special"` // 是否需要特殊评测
+	InputFile  string `json:"input_file"`  // 输入数据文件路径
+	OutputFile string `json:"output_file"` // 期望输出文件路径
+	Input      string `json:"input"`       // 输入数据
+	Output     string `json:"output"`      // 期望输出
+	Score      int    `json:"score"`       // 测试点分值
 }
 
 // JudgeTask 完整评测任务
 type JudgeTask struct {
-	TaskID      string     `json:"task_id"`      // 任务唯一标识
-	UserID      int        `json:"user_id"`      // 用户ID
-	ProblemID   int        `json:"problem_id"`   // 题目ID
-	ContestID   *int       `json:"contest_id"`   // 比赛ID（可选）
+	TaskID int64 `json:"task_id"` // 任务唯一标识
+	// UserID      int        `json:"user_id"`      // 用户ID
+	// ProblemID   int        `json:"problem_id"`   // 题目ID
+	// ContestID   *int       `json:"contest_id"`   // 比赛ID（可选）
 	Code        string     `json:"code"`         // 用户代码
 	Config      TaskConfig `json:"config"`       // 评测配置
 	TestCases   []TestCase `json:"test_cases"`   // 测试用例列表
+	FileBucket  string     `json:"file_bucket"`  // 文件存储桶名称
 	SpecialCode *string    `json:"special_code"` // 特殊评测代码（可选）
 	CreateTime  int64      `json:"create_time"`  // 任务创建时间戳
 }

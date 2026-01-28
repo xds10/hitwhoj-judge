@@ -5,18 +5,25 @@ import (
 	"errors"
 	"fmt"
 	v1 "hitwh-judge/api/calc/v1"
+	"hitwh-judge/internal/dao/minio"
 	"hitwh-judge/internal/model"
 	"hitwh-judge/internal/task/compiler"
+	"hitwh-judge/internal/task/language"
+	"hitwh-judge/internal/task/result"
+	"hitwh-judge/internal/task/runner"
+	"hitwh-judge/pkg/snowflake"
 	"os"
 	"path/filepath"
+	"strings"
+	"time"
 
 	"go.uber.org/zap"
 )
 
-func AddTask(ctx context.Context, req *v1.TaskReq) error {
+func AddTask(ctx context.Context, req *v1.TaskReq) (int64, error) {
 	// 1. 参数校验
 	if req == nil {
-		return fmt.Errorf("req is nil")
+		return 0, fmt.Errorf("req is nil")
 	}
 	config := model.DefaultTaskConfig
 
@@ -29,13 +36,35 @@ func AddTask(ctx context.Context, req *v1.TaskReq) error {
 	} else {
 		config.JudgeType = model.JudgeNormal
 	}
-	if config.JudgeType == model.JudgeNormal {
-		judge(&config, req.CodeFile)
-	}
 
-	return nil
+	taskId, err := snowflake.NextID()
+	if err != nil {
+		return 0, err
+	}
+	judgeTask := &model.JudgeTask{
+		TaskID:      taskId,
+		Config:      config,
+		Code:        req.CodeFile,
+		FileBucket:  req.Bucket,
+		SpecialCode: &req.SpecialCodeFile,
+		CreateTime:  time.Now().Unix(),
+	}
+	for _, checkPoint := range req.CheckPoints {
+		judgeTask.TestCases = append(judgeTask.TestCases, model.TestCase{
+			InputFile:  checkPoint.InputFile,
+			OutputFile: checkPoint.OutputFile,
+		})
+	}
+	if config.JudgeType == model.JudgeNormal {
+		judgeResult, err := judge(&config, judgeTask)
+		if err != nil {
+			return taskId, err
+		}
+		zap.L().Info("judgeResult", zap.Any("judgeResult", judgeResult))
+	}
+	return taskId, nil
 }
-func judge(config *model.TaskConfig, code string) (*model.JudgeResult, error) {
+func judge(config *model.TaskConfig, task *model.JudgeTask) (*model.JudgeResult, error) {
 	tempDir, cleanup, err := createTmpDir()
 	if err != nil {
 		return nil, err
@@ -43,8 +72,9 @@ func judge(config *model.TaskConfig, code string) (*model.JudgeResult, error) {
 	defer cleanup()
 
 	// 2. 写入用户代码到临时文件（C语言main.c）
-	codePath := filepath.Join(tempDir, "main.code")
-	if err := os.WriteFile(codePath, []byte(code), 0600); err != nil { // 权限0600，仅当前用户可读写
+	codeFileName := language.GetCodeFileName(config.Language)
+	codePath := filepath.Join(tempDir, codeFileName)
+	if err := os.WriteFile(codePath, []byte(task.Code), 0600); err != nil { // 权限0600，仅当前用户可读写
 		errMsg := fmt.Sprintf("写入代码文件失败: %v", err)
 		zap.L().Error(errMsg)
 		return nil, errors.New(errMsg)
@@ -61,9 +91,99 @@ func judge(config *model.TaskConfig, code string) (*model.JudgeResult, error) {
 			Error:  compileErr,
 		}, nil
 	}
+	err = downloadCase(task)
+	if err != nil {
+		return nil, err
+	}
+	zap.L().Info("评测任务", zap.Any("task", task))
+	// 4. 在沙箱中运行程序
+	var caseResults []model.TestCaseResult
+	for _, checkPoint := range task.TestCases {
+		runStatus, runErrOutput, programOutput, err := runSanBox(exePath, checkPoint.Input, config.TimeLimit, config.MemoryLimit)
+		if err != nil {
+			zap.L().Error("沙箱运行程序失败", zap.Error(err), zap.String("run_err", runErrOutput))
+			return &model.JudgeResult{
+				Status: runStatus,
+				Error:  runErrOutput,
+			}, nil
+		}
+		// 5. 对比输出（仅当运行状态为AC时）
+		if runStatus == "AC" {
+			expectedOutput := checkPoint.Output
+			comparator := result.NewComparator(false)
 
-	return nil, nil
+			result := comparator.Compare(programOutput, expectedOutput)
+			if result {
+				caseResults = append(caseResults, model.TestCaseResult{
+					Status:   "AC",
+					Output:   programOutput,
+					Expected: expectedOutput,
+					Error:    "",
+				})
+			} else {
+				caseResults = append(caseResults, model.TestCaseResult{
+					Status: "WA",
+					Error:  fmt.Sprintf("预期输出: %s, 实际输出: %s", normalizeString(expectedOutput), programOutput),
+				})
+			}
 
+		} else {
+			caseResults = append(caseResults, model.TestCaseResult{
+				Status: runStatus,
+				Error:  runErrOutput,
+			})
+		}
+
+	}
+	judgeResult := &model.JudgeResult{
+		TaskID:        task.TaskID,
+		Status:        "AC",
+		TotalScore:    0,
+		TotalTimeUsed: 0,
+		TotalMemUsed:  0,
+		CompileResult: model.CompileResult{
+			Success: true,
+			Message: "",
+		},
+		TestResults: caseResults,
+		CodeFileID:  0,
+		SubmitTime:  time.Now(),
+		JudgeTime:   time.Now(),
+		Error:       "",
+	}
+	return judgeResult, nil
+
+}
+
+// 清理字符串中的换行符（统一为\n，去除首尾空白）
+func normalizeString(s string) string {
+	// 替换Windows换行符为Unix换行符
+	s = strings.ReplaceAll(s, "\r\n", "\n")
+	// 去除首尾空白（包括换行、空格、制表符）
+	return strings.TrimSpace(s)
+}
+
+func runSanBox(exePath, input string, timeLimit, memoryLimit int) (runStatus, runErrOutput, programOutput string, err error) {
+	nsJail := model.DefaultSandboxConfig
+	sanbox := runner.NewRunner(runner.NsJail, nsJail.Path)
+	programOutput, runErrOutput, runStatus, err = sanbox.RunInSandbox(exePath, input, timeLimit, memoryLimit)
+	if err != nil {
+		return runStatus, runErrOutput, programOutput, err
+	}
+	return runStatus, runErrOutput, programOutput, nil
+}
+func downloadCase(task *model.JudgeTask) (err error) {
+	for i := range task.TestCases {
+		task.TestCases[i].Input, err = minio.DownloadFileByMD5AsString(task.FileBucket, task.TestCases[i].InputFile)
+		if err != nil {
+			return err
+		}
+		task.TestCases[i].Output, err = minio.DownloadFileByMD5AsString(task.FileBucket, task.TestCases[i].OutputFile)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func createTmpDir() (string, func(), error) {
