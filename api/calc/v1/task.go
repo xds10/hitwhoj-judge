@@ -18,7 +18,3 @@ type checkPoint struct {
 	InputFile  string `json:"input"`
 	OutputFile string `json:"output"`
 }
-
-type TaskResp struct {
-	TaskID int64 `json:"taskID"`
-}

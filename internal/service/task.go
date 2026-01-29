@@ -20,10 +20,10 @@ import (
 	"go.uber.org/zap"
 )
 
-func AddTask(ctx context.Context, req *v1.TaskReq) (int64, error) {
+func AddTask(ctx context.Context, req *v1.TaskReq) (*model.JudgeResult, error) {
 	// 1. 参数校验
 	if req == nil {
-		return 0, fmt.Errorf("req is nil")
+		return nil, fmt.Errorf("req is nil")
 	}
 	config := model.DefaultTaskConfig
 
@@ -39,7 +39,7 @@ func AddTask(ctx context.Context, req *v1.TaskReq) (int64, error) {
 
 	taskId, err := snowflake.NextID()
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 	judgeTask := &model.JudgeTask{
 		TaskID:      taskId,
@@ -55,14 +55,15 @@ func AddTask(ctx context.Context, req *v1.TaskReq) (int64, error) {
 			OutputFile: checkPoint.OutputFile,
 		})
 	}
+	var judgeResult *model.JudgeResult
 	if config.JudgeType == model.JudgeNormal {
-		judgeResult, err := judge(&config, judgeTask)
+		judgeResult, err = judge(&config, judgeTask)
 		if err != nil {
-			return taskId, err
+			return nil, err
 		}
 		zap.L().Info("judgeResult", zap.Any("judgeResult", judgeResult))
 	}
-	return taskId, nil
+	return judgeResult, nil
 }
 func judge(config *model.TaskConfig, task *model.JudgeTask) (*model.JudgeResult, error) {
 	tempDir, cleanup, err := createTmpDir()

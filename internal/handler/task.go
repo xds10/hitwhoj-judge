@@ -17,11 +17,11 @@ func AddTaskHandler(c *gin.Context) {
 		return
 	}
 	zap.L().Info("add-task", zap.Any("req", req))
-	taskId, err := service.AddTask(c, req)
+	judgeResult, err := service.AddTask(c, req)
 	if err != nil {
 		zap.L().Error("add-task failed", zap.Error(err))
 		api.ResponseError(c, api.CodeInternalError)
 		return
 	}
-	api.ResponseSuccess(c, taskId)
+	api.ResponseSuccess(c, judgeResult)
 }
