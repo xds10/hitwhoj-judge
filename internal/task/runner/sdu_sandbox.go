@@ -33,13 +33,13 @@ var DefaultSDUSandboxConfig = model.SandboxConfig{
 
 // SandboxResult 沙箱运行结果
 type SandboxResult struct {
-	CpuTime  int `json:"cpu_time"`
-	RealTime int `json:"real_time"`
-	Memory   int `json:"memory"`
-	Signal   int `json:"signal"`
-	ExitCode int `json:"exit_code"`
-	Error    int `json:"error"`
-	Result   int `json:"result"`
+	CpuTime  int   `json:"cpu_time"`
+	RealTime int   `json:"real_time"`
+	Memory   int64 `json:"memory"`
+	Signal   int   `json:"signal"`
+	ExitCode int   `json:"exit_code"`
+	Error    int   `json:"error"`
+	Result   int   `json:"result"`
 }
 
 // 运行结果映射
@@ -58,7 +58,7 @@ func (csr *SDUSandboxRunner) RunInSandbox(runParams model.RunParams) *model.Test
 	// 提取参数
 	exePath := runParams.ExePath
 	input := runParams.Input
-	// timeLimit := runParams.TimeLimit
+	timeLimit := runParams.TimeLimit
 	memoryLimit := runParams.MemLimit
 
 	// 检查sandbox是否存在
@@ -100,7 +100,7 @@ func (csr *SDUSandboxRunner) RunInSandbox(runParams model.RunParams) *model.Test
 			return &model.TestCaseResult{
 				TestCaseIndex: runParams.TestCaseIndex,
 				Status:        model.StatusSE,
-				Error:         fmt.Sprintf("写入输入文件失败: %w", err),
+				Error:         fmt.Sprintf("写入输入文件失败: %v", err),
 			}
 		}
 	} else {
@@ -109,7 +109,7 @@ func (csr *SDUSandboxRunner) RunInSandbox(runParams model.RunParams) *model.Test
 			return &model.TestCaseResult{
 				TestCaseIndex: runParams.TestCaseIndex,
 				Status:        model.StatusSE,
-				Error:         fmt.Sprintf("创建输入文件失败: %w", err),
+				Error:         fmt.Sprintf("创建输入文件失败: %v", err),
 			}
 		}
 	}
@@ -120,7 +120,7 @@ func (csr *SDUSandboxRunner) RunInSandbox(runParams model.RunParams) *model.Test
 		return &model.TestCaseResult{
 			TestCaseIndex: runParams.TestCaseIndex,
 			Status:        model.StatusSE,
-			Error:         fmt.Sprintf("获取可执行文件绝对路径失败: %w", err),
+			Error:         fmt.Sprintf("获取可执行文件绝对路径失败: %v", err),
 		}
 	}
 
@@ -132,7 +132,8 @@ func (csr *SDUSandboxRunner) RunInSandbox(runParams model.RunParams) *model.Test
 		"--input_path="+inputPath,
 		"--output_path="+outputPath,
 		"--seccomp_rules=general",
-		fmt.Sprintf("--max_memory=%d", memoryLimit*1024*1024), // 转换为字节
+		fmt.Sprintf("--max_memory=%d", memoryLimit*1024*1024),  // 转换为字节
+		fmt.Sprintf("--max_real_time=%d", int(timeLimit)*1200), // 转换为毫秒
 	)
 
 	// 捕获标准输出和错误输出
@@ -145,7 +146,7 @@ func (csr *SDUSandboxRunner) RunInSandbox(runParams model.RunParams) *model.Test
 		return &model.TestCaseResult{
 			TestCaseIndex: runParams.TestCaseIndex,
 			Status:        model.StatusSE,
-			Error:         fmt.Sprintf("沙箱运行失败: %w, 错误输出: %s", err, stderr.String()),
+			Error:         fmt.Sprintf("沙箱运行失败: %v, 错误输出: %s", err, stderr.String()),
 		}
 	}
 	outputBytes := normalizeString(stdout.String())
@@ -169,7 +170,7 @@ func (csr *SDUSandboxRunner) RunInSandbox(runParams model.RunParams) *model.Test
 		return &model.TestCaseResult{
 			TestCaseIndex: runParams.TestCaseIndex,
 			Status:        model.StatusSE,
-			Error:         fmt.Sprintf("解析沙箱结果失败: %w, 输出: %s", err, jsonStr),
+			Error:         fmt.Sprintf("解析沙箱结果失败: %v, 输出: %s", err, jsonStr),
 		}
 	}
 	zap.L().Info("Sandbox result", zap.Any("result", result))
@@ -182,7 +183,7 @@ func (csr *SDUSandboxRunner) RunInSandbox(runParams model.RunParams) *model.Test
 			return &model.TestCaseResult{
 				TestCaseIndex: runParams.TestCaseIndex,
 				Status:        model.StatusSE,
-				Error:         fmt.Sprintf("读取输出文件失败: %w", err),
+				Error:         fmt.Sprintf("读取输出文件失败: %v", err),
 			}
 		}
 		output = normalizeString(string(outputBytes))
@@ -201,7 +202,7 @@ func (csr *SDUSandboxRunner) RunInSandbox(runParams model.RunParams) *model.Test
 	zap.L().Info("Sandbox execution result",
 		zap.Int("cpu_time", result.CpuTime),
 		zap.Int("real_time", result.RealTime),
-		zap.Int("memory", result.Memory),
+		zap.Int64("memory", result.Memory),
 		zap.Int("signal", result.Signal),
 		zap.Int("exit_code", result.ExitCode),
 		zap.Int("error", result.Error),
@@ -213,6 +214,14 @@ func (csr *SDUSandboxRunner) RunInSandbox(runParams model.RunParams) *model.Test
 		zap.String("err_output", errOutput),
 		zap.String("status", status),
 	)
+	if result.Result == 0 {
+		if result.Memory > memoryLimit*1024*1024 {
+			status = model.StatusMLE
+		}
+		if result.CpuTime > int(timeLimit)*1000 {
+			status = model.StatusTLE
+		}
+	}
 	testCaseResult := &model.TestCaseResult{
 		TestCaseIndex: runParams.TestCaseIndex,
 		Status:        model.JudgeStatus(status),
