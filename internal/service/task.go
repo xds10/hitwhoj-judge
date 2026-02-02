@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	v1 "hitwh-judge/api/calc/v1"
-	"hitwh-judge/internal/dao/minio"
+	"hitwh-judge/internal/cache"
 	"hitwh-judge/internal/model"
 	"hitwh-judge/internal/task/compiler"
 	"hitwh-judge/internal/task/language"
@@ -100,7 +100,13 @@ func judge(config *model.TaskConfig, task *model.JudgeTask) (*model.JudgeResult,
 	// 4. 在沙箱中运行程序
 	var caseResults []model.TestCaseResult
 	for _, checkPoint := range task.TestCases {
-		runStatus, runErrOutput, programOutput, err := runSanBox(exePath, checkPoint.Input, config.TimeLimit, config.MemoryLimit)
+		runParams := model.RunParams{
+			ExePath:   exePath,
+			Input:     checkPoint.Input,
+			TimeLimit: int64(config.TimeLimit),
+			MemLimit:  int64(config.MemoryLimit),
+		}
+		runStatus, runErrOutput, programOutput, err := runSanBox(runParams)
 		if err != nil {
 			zap.L().Error("沙箱运行程序失败", zap.Error(err), zap.String("run_err", runErrOutput))
 			return &model.JudgeResult{
@@ -108,6 +114,11 @@ func judge(config *model.TaskConfig, task *model.JudgeTask) (*model.JudgeResult,
 				Error:  runErrOutput,
 			}, nil
 		}
+		zap.L().Info("runRes", zap.Any("runRes", model.RunResult{
+			Status: runStatus,
+			Output: programOutput,
+			Error:  runErrOutput,
+		}))
 		// 5. 对比输出（仅当运行状态为AC时）
 		if runStatus == "AC" {
 			expectedOutput := checkPoint.Output
@@ -131,6 +142,7 @@ func judge(config *model.TaskConfig, task *model.JudgeTask) (*model.JudgeResult,
 		} else {
 			caseResults = append(caseResults, model.TestCaseResult{
 				Status: runStatus,
+				Output: programOutput,
 				Error:  runErrOutput,
 			})
 		}
@@ -164,25 +176,52 @@ func normalizeString(s string) string {
 	return strings.TrimSpace(s)
 }
 
-func runSanBox(exePath, input string, timeLimit, memoryLimit int) (runStatus, runErrOutput, programOutput string, err error) {
+func runSanBox(runParams model.RunParams) (runStatus, runErrOutput, programOutput string, err error) {
 	nsJail := model.DefaultSandboxConfig
-	sanbox := runner.NewRunner(runner.NsJail, nsJail.Path)
-	programOutput, runErrOutput, runStatus, err = sanbox.RunInSandbox(exePath, input, timeLimit, memoryLimit)
+	// config := model.TaskConfig{
+	// 	TimeLimit:   timeLimit,
+	// 	MemoryLimit: memoryLimit,
+	// }
+	// sanbox := runner.NewRunner(runner.NsJail, nsJail.Path)
+	// judgeController := NewJudgeController(sanbox)
+	// runResult, err := judgeController.RunWithResourceLimit(exePath, input, config)
+	// if err != nil {
+	// 	return runResult.Status, runResult.Error, runResult.Output, err
+	// }
+	sandBox := runner.NewRunner(runner.NsJail, nsJail.Path)
+	programOutput, runErrOutput, runStatus, err = sandBox.RunInSandbox(runParams)
 	if err != nil {
 		return runStatus, runErrOutput, programOutput, err
 	}
+
 	return runStatus, runErrOutput, programOutput, nil
 }
 func downloadCase(task *model.JudgeTask) (err error) {
+	testCache := cache.GetEnhancedTestFileCache()
 	for i := range task.TestCases {
-		task.TestCases[i].Input, err = minio.DownloadFileByMD5AsString(task.FileBucket, task.TestCases[i].InputFile)
+		// 下载输入文件
+		inputFilePath, err := testCache.DownloadFileByMD5WithCache(task.FileBucket, task.TestCases[i].InputFile)
 		if err != nil {
 			return err
 		}
-		task.TestCases[i].Output, err = minio.DownloadFileByMD5AsString(task.FileBucket, task.TestCases[i].OutputFile)
+		// 读取输入文件内容
+		inputContent, err := os.ReadFile(inputFilePath)
 		if err != nil {
 			return err
 		}
+		task.TestCases[i].Input = string(inputContent)
+
+		// 下载输出文件
+		outputFilePath, err := testCache.DownloadFileByMD5WithCache(task.FileBucket, task.TestCases[i].OutputFile)
+		if err != nil {
+			return err
+		}
+		// 读取输出文件内容
+		outputContent, err := os.ReadFile(outputFilePath)
+		if err != nil {
+			return err
+		}
+		task.TestCases[i].Output = string(outputContent)
 	}
 	return nil
 }

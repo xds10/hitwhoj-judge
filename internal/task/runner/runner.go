@@ -1,5 +1,7 @@
 package runner
 
+import "hitwh-judge/internal/model"
+
 type SandboxType int
 
 const (
@@ -8,7 +10,17 @@ const (
 
 // Runner 沙箱运行器接口
 type Runner interface {
-	RunInSandbox(exePath, input string, timeLimit, memoryLimit int) (string, string, string, error)
+	RunInSandbox(runParams model.RunParams) (string, string, string, error)
+	// RunInSandboxAsync 异步运行沙箱程序，返回进程PID和控制通道
+	RunInSandboxAsync(exePath, input string) (int, <-chan RunResult, error)
+}
+
+// RunResult 异步运行结果
+type RunResult struct {
+	Output    string
+	ErrOutput string
+	Status    string
+	Err       error
 }
 
 func NewRunner(sandboxType SandboxType, sandboxPath string) Runner {

@@ -49,3 +49,10 @@ type JudgeResult struct {
 	JudgeTime     time.Time        `json:"judge_time"`      // 评测完成时间
 	Error         string           `json:"error"`           // 评测错误信息
 }
+
+type RunResult struct {
+	Output    string
+	ErrOutput string
+	Status    string
+	Error     string
+}

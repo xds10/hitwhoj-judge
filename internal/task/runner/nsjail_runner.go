@@ -3,10 +3,13 @@ package runner
 import (
 	"bytes"
 	"fmt"
+	"hitwh-judge/internal/model"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"syscall"
+
+	"go.uber.org/zap"
 )
 
 // NsJailRunner NsJail沙箱运行器
@@ -15,7 +18,10 @@ type NsJailRunner struct {
 }
 
 // RunInSandbox 在NsJail沙箱中运行程序
-func (nr *NsJailRunner) RunInSandbox(exePath, input string, timeLimit, memoryLimit int) (string, string, string, error) {
+func (nr *NsJailRunner) RunInSandbox(runParams model.RunParams) (string, string, string, error) {
+	exePath := runParams.ExePath
+	input := runParams.Input
+
 	// 检查nsjail是否存在
 	if _, err := exec.LookPath(nr.NsJailPath); err != nil {
 		return "", "", "", err
@@ -32,11 +38,8 @@ func (nr *NsJailRunner) RunInSandbox(exePath, input string, timeLimit, memoryLim
 	cmd := exec.Command(
 		nr.NsJailPath,
 		"-Mo", "-N",
-		"--time_limit", fmt.Sprintf("%d", timeLimit),
-		"--rlimit_as", fmt.Sprintf("%d", memoryLimit),
-		"--rlimit_nproc", "1",
+		"--rlimit_nproc", "32",
 		"--chroot", exeDir,
-		"--hostname", "oj-sandbox",
 		"--user", "99999",
 		"--group", "99999",
 		"--disable_clone_newuser",
@@ -60,6 +63,7 @@ func (nr *NsJailRunner) RunInSandbox(exePath, input string, timeLimit, memoryLim
 	err = cmd.Run()
 	output := normalizeString(stdout.String())
 	errOutput := stderr.String()
+	zap.L().Info("errOutput", zap.String("errOutput", errOutput))
 
 	// 解析错误类型
 	status := "AC"
@@ -72,6 +76,85 @@ func (nr *NsJailRunner) RunInSandbox(exePath, input string, timeLimit, memoryLim
 	}
 
 	return output, errOutput, status, nil
+}
+
+// RunInSandboxAsync 异步运行沙箱程序，返回进程PID和控制通道
+func (nr *NsJailRunner) RunInSandboxAsync(exePath, input string) (int, <-chan RunResult, error) {
+	// 检查nsjail是否存在
+	if _, err := exec.LookPath(nr.NsJailPath); err != nil {
+		return 0, nil, err
+	}
+
+	// 获取可执行文件的绝对路径
+	absExePath, err := filepath.Abs(exePath)
+	if err != nil {
+		return 0, nil, fmt.Errorf("获取可执行文件绝对路径失败: %w", err)
+	}
+	exeDir := filepath.Dir(absExePath)
+
+	// 构建NsJail命令
+	cmd := exec.Command(
+		nr.NsJailPath,
+		"-Mo", "-N",
+		"--rlimit_nproc", "32",
+		"--chroot", exeDir,
+		"--user", "99999",
+		"--group", "99999",
+		"--disable_clone_newuser",
+		"--",
+		filepath.Base(absExePath),
+	)
+
+	// 设置输入
+	var stdin bytes.Buffer
+	if input != "" {
+		stdin.WriteString(normalizeString(input))
+	}
+	cmd.Stdin = &stdin
+
+	// 捕获输出和错误
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	// 启动命令（非阻塞）
+	if err := cmd.Start(); err != nil {
+		return 0, nil, fmt.Errorf("启动nsjail进程失败: %w", err)
+	}
+
+	// 创建结果通道
+	resultChan := make(chan RunResult, 1)
+
+	// 启动goroutine等待命令执行完成
+	go func() {
+		defer close(resultChan)
+
+		// 等待命令执行完成
+		err := cmd.Wait()
+		output := normalizeString(stdout.String())
+		errOutput := stderr.String()
+
+		// 解析错误类型
+		status := "AC"
+		if err != nil {
+			if exitErr, ok := err.(*exec.ExitError); ok {
+				status = parseNsJailError(errOutput, exitErr)
+			} else {
+				status = "RE"
+			}
+		}
+
+		// 发送结果
+		resultChan <- RunResult{
+			Output:    output,
+			ErrOutput: errOutput,
+			Status:    status,
+			Err:       err,
+		}
+	}()
+
+	// 返回进程PID和结果通道
+	return cmd.Process.Pid, resultChan, nil
 }
 
 // parseNsJailError 解析NsJail运行错误
