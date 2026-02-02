@@ -45,15 +45,3 @@ type SandboxConfig struct {
 	Path        string                  `json:"path"`         // 沙箱可执行文件路径
 	CompilerMap map[LanguageType]string `json:"compiler_map"` // 编译器路径映射
 }
-
-// DefaultSandboxConfig 默认沙箱配置
-var DefaultSandboxConfig = SandboxConfig{
-	Type: "nsjail",
-	Path: "nsjail",
-	CompilerMap: map[LanguageType]string{
-		LanguageC:    "gcc",
-		LanguageCPP:  "g++",
-		LanguageJava: "javac",
-		LanguagePy:   "python3",
-	},
-}

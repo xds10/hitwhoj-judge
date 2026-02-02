@@ -99,52 +99,42 @@ func judge(config *model.TaskConfig, task *model.JudgeTask) (*model.JudgeResult,
 	zap.L().Info("评测任务", zap.Any("task", task))
 	// 4. 在沙箱中运行程序
 	var caseResults []model.TestCaseResult
-	for _, checkPoint := range task.TestCases {
+	for i, checkPoint := range task.TestCases {
 		runParams := model.RunParams{
-			ExePath:   exePath,
-			Input:     checkPoint.Input,
-			TimeLimit: int64(config.TimeLimit),
-			MemLimit:  int64(config.MemoryLimit),
+			TestCaseIndex: int(i),
+			ExePath:       exePath,
+			Input:         checkPoint.Input,
+			TimeLimit:     int64(config.TimeLimit),
+			MemLimit:      int64(config.MemoryLimit),
 		}
-		runStatus, runErrOutput, programOutput, err := runSanBox(runParams)
+		testCaseResult, err := runSanBox(runParams)
+		testCaseResult.Expected = checkPoint.Output
+
 		if err != nil {
-			zap.L().Error("沙箱运行程序失败", zap.Error(err), zap.String("run_err", runErrOutput))
+			zap.L().Error("沙箱运行程序失败", zap.Error(err), zap.String("run_err", testCaseResult.Error))
 			return &model.JudgeResult{
-				Status: runStatus,
-				Error:  runErrOutput,
+				Status: testCaseResult.Status,
+				Error:  testCaseResult.Error,
 			}, nil
 		}
-		zap.L().Info("runRes", zap.Any("runRes", model.RunResult{
-			Status: runStatus,
-			Output: programOutput,
-			Error:  runErrOutput,
-		}))
+		zap.L().Info("runRes", zap.Any("runRes", testCaseResult))
 		// 5. 对比输出（仅当运行状态为AC时）
-		if runStatus == "AC" {
+		if testCaseResult.Status == model.StatusAC {
 			expectedOutput := checkPoint.Output
 			comparator := result.NewComparator(false)
 
-			result := comparator.Compare(programOutput, expectedOutput)
+			result := comparator.Compare(testCaseResult.Output, expectedOutput)
 			if result {
-				caseResults = append(caseResults, model.TestCaseResult{
-					Status:   "AC",
-					Output:   programOutput,
-					Expected: expectedOutput,
-					Error:    "",
-				})
+				testCaseResult.Status = model.StatusAC
+				caseResults = append(caseResults, *testCaseResult)
 			} else {
-				caseResults = append(caseResults, model.TestCaseResult{
-					Status: "WA",
-					Error:  fmt.Sprintf("预期输出: %s, 实际输出: %s", normalizeString(expectedOutput), programOutput),
-				})
+				testCaseResult.Status = model.StatusWA
+				testCaseResult.Error = fmt.Sprintf("预期输出: %s, 实际输出: %s", normalizeString(expectedOutput), testCaseResult.Output)
+				caseResults = append(caseResults, *testCaseResult)
 			}
 
 		} else {
-			caseResults = append(caseResults, model.TestCaseResult{
-				Status: runStatus,
-				Output: programOutput,
-				Error:  runErrOutput,
-			})
+			caseResults = append(caseResults, *testCaseResult)
 		}
 
 	}
@@ -176,8 +166,8 @@ func normalizeString(s string) string {
 	return strings.TrimSpace(s)
 }
 
-func runSanBox(runParams model.RunParams) (runStatus, runErrOutput, programOutput string, err error) {
-	nsJail := model.DefaultSandboxConfig
+func runSanBox(runParams model.RunParams) (*model.TestCaseResult, error) {
+
 	// config := model.TaskConfig{
 	// 	TimeLimit:   timeLimit,
 	// 	MemoryLimit: memoryLimit,
@@ -188,13 +178,20 @@ func runSanBox(runParams model.RunParams) (runStatus, runErrOutput, programOutpu
 	// if err != nil {
 	// 	return runResult.Status, runResult.Error, runResult.Output, err
 	// }
-	sandBox := runner.NewRunner(runner.NsJail, nsJail.Path)
-	programOutput, runErrOutput, runStatus, err = sandBox.RunInSandbox(runParams)
-	if err != nil {
-		return runStatus, runErrOutput, programOutput, err
+	// nsJail := runner.GetDefaultSandboxConfig(runner.NsJail)
+	// nsjailSandBox := runner.NewRunner(runner.NsJail, nsJail.Path)
+	// programOutput, runErrOutput, runStatus, err = nsjailSandBox.RunInSandbox(runParams)
+	// if err != nil {
+	// 	return runStatus, runErrOutput, programOutput, err
+	// }
+	sduSandboxConfig := runner.GetDefaultSandboxConfig(runner.SDUSandbox)
+	sduSandbox := runner.NewRunner(runner.SDUSandbox, sduSandboxConfig.Path)
+	testCaseResult := sduSandbox.RunInSandbox(runParams)
+	// 检查沙箱是否返回错误
+	if testCaseResult != nil && testCaseResult.Error != "" {
+		return testCaseResult, errors.New(testCaseResult.Error)
 	}
-
-	return runStatus, runErrOutput, programOutput, nil
+	return testCaseResult, nil
 }
 func downloadCase(task *model.JudgeTask) (err error) {
 	testCache := cache.GetEnhancedTestFileCache()
@@ -232,6 +229,13 @@ func createTmpDir() (string, func(), error) {
 	if err != nil {
 		errMsg := fmt.Sprintf("创建临时目录失败: %v", err)
 		zap.L().Error(errMsg)
+		return "", nil, errors.New(errMsg)
+	}
+	if err := os.Chmod(tempDir, 0777); err != nil {
+		errMsg := fmt.Sprintf("修改临时目录权限失败: %v, 目录路径: %s", err, tempDir)
+		zap.L().Error(errMsg)
+		// 权限修改失败时，清理已创建的临时目录，避免残留
+		_ = os.RemoveAll(tempDir)
 		return "", nil, errors.New(errMsg)
 	}
 

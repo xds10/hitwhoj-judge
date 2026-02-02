@@ -27,7 +27,6 @@ type CompileResult struct {
 type TestCaseResult struct {
 	TestCaseIndex int           `json:"test_case_index"` // 测试点索引
 	Status        JudgeStatus   `json:"status"`          // 测试点状态
-	Score         int           `json:"score"`           // 获得分值
 	TimeUsed      time.Duration `json:"time_used"`       // 实际运行时间
 	MemUsed       uint64        `json:"mem_used"`        // 实际内存使用
 	Output        string        `json:"output"`          // 程序输出

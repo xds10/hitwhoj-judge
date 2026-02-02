@@ -17,6 +17,18 @@ type NsJailRunner struct {
 	NsJailPath string
 }
 
+// DefaultSandboxConfig 默认沙箱配置
+var DefaultNsJailSandboxConfig = model.SandboxConfig{
+	Type: "nsjail",
+	Path: "nsjail",
+	CompilerMap: map[model.LanguageType]string{
+		model.LanguageC:    "gcc",
+		model.LanguageCPP:  "g++",
+		model.LanguageJava: "javac",
+		model.LanguagePy:   "python3",
+	},
+}
+
 // RunInSandbox 在NsJail沙箱中运行程序
 func (nr *NsJailRunner) RunInSandbox(runParams model.RunParams) (string, string, string, error) {
 	exePath := runParams.ExePath
