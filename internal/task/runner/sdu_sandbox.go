@@ -85,7 +85,7 @@ func (csr *SDUSandboxRunner) RunInSandbox(runParams model.RunParams) *model.Test
 		return &model.TestCaseResult{
 			TestCaseIndex: runParams.TestCaseIndex,
 			Status:        model.StatusSE,
-			Error:         fmt.Sprintf("创建临时目录失败: %w", err),
+			Error:         fmt.Sprintf("创建临时目录失败: %v", err),
 		}
 	}
 	defer os.RemoveAll(tempDir)

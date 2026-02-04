@@ -178,19 +178,19 @@ func runSanBox(runParams model.RunParams) (*model.TestCaseResult, error) {
 	// if err != nil {
 	// 	return runResult.Status, runResult.Error, runResult.Output, err
 	// }
-	// nsJail := runner.GetDefaultSandboxConfig(runner.NsJail)
-	// nsjailSandBox := runner.NewRunner(runner.NsJail, nsJail.Path)
-	// programOutput, runErrOutput, runStatus, err = nsjailSandBox.RunInSandbox(runParams)
-	// if err != nil {
-	// 	return runStatus, runErrOutput, programOutput, err
-	// }
-	sduSandboxConfig := runner.GetDefaultSandboxConfig(runner.SDUSandbox)
-	sduSandbox := runner.NewRunner(runner.SDUSandbox, sduSandboxConfig.Path)
-	testCaseResult := sduSandbox.RunInSandbox(runParams)
-	// 检查沙箱是否返回错误
+	nsJail := runner.GetDefaultSandboxConfig(runner.NsJail)
+	nsjailSandBox := runner.NewRunner(runner.NsJail, nsJail.Path)
+	testCaseResult := nsjailSandBox.RunInSandbox(runParams)
 	if testCaseResult != nil && testCaseResult.Error != "" {
 		return testCaseResult, errors.New(testCaseResult.Error)
 	}
+	// sduSandboxConfig := runner.GetDefaultSandboxConfig(runner.SDUSandbox)
+	// sduSandbox := runner.NewRunner(runner.SDUSandbox, sduSandboxConfig.Path)
+	// testCaseResult := sduSandbox.RunInSandbox(runParams)
+	// // 检查沙箱是否返回错误
+	// if testCaseResult != nil && testCaseResult.Error != "" {
+	// 	return testCaseResult, errors.New(testCaseResult.Error)
+	// }
 	return testCaseResult, nil
 }
 func downloadCase(task *model.JudgeTask) (err error) {

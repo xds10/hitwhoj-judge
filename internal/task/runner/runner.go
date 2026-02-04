@@ -1,6 +1,9 @@
 package runner
 
-import "hitwh-judge/internal/model"
+import (
+	"hitwh-judge/internal/model"
+	"strings"
+)
 
 type SandboxType int
 
@@ -26,10 +29,10 @@ type RunResult struct {
 
 func NewRunner(sandboxType SandboxType, sandboxPath string) Runner {
 	switch sandboxType {
-	// case NsJail:
-	// 	return &NsJailRunner{
-	// 		NsJailPath: sandboxPath,
-	// 	}
+	case NsJail:
+		return &NsJailRunner{
+			NsJailPath: sandboxPath,
+		}
 	case SDUSandbox:
 		return &SDUSandboxRunner{
 			SandboxPath: sandboxPath,
@@ -48,4 +51,10 @@ func GetDefaultSandboxConfig(sandboxType SandboxType) model.SandboxConfig {
 	default:
 		return model.SandboxConfig{}
 	}
+}
+
+// normalizeString 清理字符串中的换行符
+func normalizeString(s string) string {
+	s = strings.ReplaceAll(s, "\r\n", "\n")
+	return strings.TrimSpace(s)
 }
