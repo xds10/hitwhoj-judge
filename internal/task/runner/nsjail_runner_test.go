@@ -36,11 +36,10 @@ int main() {
 	}
 
 	// 编译程序
-	cmd := exec.Command("gcc", sourceFile, "-o", exeFile)
+	cmd := exec.Command("gcc", sourceFile, "-o", exeFile, "-static")
 	if err := cmd.Run(); err != nil {
 		t.Fatalf("Failed to compile: %v", err)
 	}
-
 	// 运行测试
 	result := runner.RunInSandbox(model.RunParams{
 		TestCaseIndex: 0,
@@ -88,7 +87,7 @@ int main() {
 		t.Fatalf("Failed to write source file: %v", err)
 	}
 
-	cmd := exec.Command("gcc", sourceFile, "-o", exeFile)
+	cmd := exec.Command("gcc", sourceFile, "-o", exeFile, "-static")
 	if err := cmd.Run(); err != nil {
 		t.Fatalf("Failed to compile: %v", err)
 	}
@@ -141,7 +140,7 @@ func TestNsJailRunner_ResourceMonitoring(t *testing.T) {
 #include <stdlib.h>
 int main() {
     int sum = 0;
-    for (int i = 0; i < 1000000; i++) {
+    for (int i = 0; i < 100000000; i++) {
         sum += i;
     }
     printf("%d\n", sum);
@@ -152,7 +151,7 @@ int main() {
 		t.Fatalf("Failed to write source file: %v", err)
 	}
 
-	cmd := exec.Command("gcc", sourceFile, "-o", exeFile)
+	cmd := exec.Command("gcc", sourceFile, "-o", exeFile, "-static")
 	if err := cmd.Run(); err != nil {
 		t.Fatalf("Failed to compile: %v", err)
 	}
@@ -211,7 +210,7 @@ int main() {
 		t.Fatalf("Failed to write source file: %v", err)
 	}
 
-	cmd := exec.Command("gcc", sourceFile, "-o", exeFile)
+	cmd := exec.Command("gcc", sourceFile, "-o", exeFile, "-static")
 	if err := cmd.Run(); err != nil {
 		t.Fatalf("Failed to compile: %v", err)
 	}

@@ -26,8 +26,13 @@ func TestSDUSandboxRunner_BasicExecution(t *testing.T) {
 		SandboxPath: sandboxPath,
 	}
 
+	tempDir, cleanup, err := createTmpDir()
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer cleanup()
 	// 创建一个简单的C程序
-	tempDir := t.TempDir()
+
 	sourceFile := filepath.Join(tempDir, "hello.c")
 	exeFile := filepath.Join(tempDir, "hello")
 
@@ -42,9 +47,13 @@ int main() {
 	}
 
 	// 编译程序
-	cmd := exec.Command("gcc", sourceFile, "-o", exeFile)
+	cmd := exec.Command("gcc", sourceFile, "-o", exeFile, "-Wall", "-O2", "-static", "-std=c11")
 	if err := cmd.Run(); err != nil {
 		t.Fatalf("Failed to compile: %v", err)
+	}
+	cmd = exec.Command("chmod", "+x", exeFile)
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("Failed to set executable permission: %v", err)
 	}
 
 	// 运行测试
@@ -81,7 +90,11 @@ func TestSDUSandboxRunner_InputOutput(t *testing.T) {
 		SandboxPath: sandboxPath,
 	}
 
-	tempDir := t.TempDir()
+	tempDir, cleanup, err := createTmpDir()
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer cleanup()
 	sourceFile := filepath.Join(tempDir, "add.c")
 	exeFile := filepath.Join(tempDir, "add")
 
@@ -97,9 +110,13 @@ int main() {
 		t.Fatalf("Failed to write source file: %v", err)
 	}
 
-	cmd := exec.Command("gcc", sourceFile, "-o", exeFile)
+	cmd := exec.Command("gcc", sourceFile, "-o", exeFile, "-static")
 	if err := cmd.Run(); err != nil {
 		t.Fatalf("Failed to compile: %v", err)
+	}
+	cmd = exec.Command("chmod", "+x", exeFile)
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("Failed to set executable permission: %v", err)
 	}
 
 	// 测试用例
@@ -148,7 +165,11 @@ func TestSDUSandboxRunner_TimeLimit(t *testing.T) {
 		SandboxPath: sandboxPath,
 	}
 
-	tempDir := t.TempDir()
+	tempDir, cleanup, err := createTmpDir()
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer cleanup()
 	sourceFile := filepath.Join(tempDir, "infinite.c")
 	exeFile := filepath.Join(tempDir, "infinite")
 
@@ -166,9 +187,13 @@ int main() {
 		t.Fatalf("Failed to write source file: %v", err)
 	}
 
-	cmd := exec.Command("gcc", sourceFile, "-o", exeFile)
+	cmd := exec.Command("gcc", sourceFile, "-o", exeFile, "-static")
 	if err := cmd.Run(); err != nil {
 		t.Fatalf("Failed to compile: %v", err)
+	}
+	cmd = exec.Command("chmod", "+x", exeFile)
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("Failed to set executable permission: %v", err)
 	}
 
 	// 运行测试，设置1秒时间限制
@@ -201,7 +226,11 @@ func TestSDUSandboxRunner_MemoryLimit(t *testing.T) {
 		SandboxPath: sandboxPath,
 	}
 
-	tempDir := t.TempDir()
+	tempDir, cleanup, err := createTmpDir()
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer cleanup()
 	sourceFile := filepath.Join(tempDir, "memory.c")
 	exeFile := filepath.Join(tempDir, "memory")
 
@@ -211,9 +240,10 @@ func TestSDUSandboxRunner_MemoryLimit(t *testing.T) {
 int main() {
     // 尝试分配100MB内存
     char *p = malloc(100 * 1024 * 1024);
-    if (p) {
+    // if (p) {
         memset(p, 0, 100 * 1024 * 1024);
-    }
+    // }
+	printf("Memory allocated successfully\n");
     return 0;
 }`
 
@@ -221,9 +251,13 @@ int main() {
 		t.Fatalf("Failed to write source file: %v", err)
 	}
 
-	cmd := exec.Command("gcc", sourceFile, "-o", exeFile)
+	cmd := exec.Command("gcc", sourceFile, "-o", exeFile, "-static")
 	if err := cmd.Run(); err != nil {
 		t.Fatalf("Failed to compile: %v", err)
+	}
+	cmd = exec.Command("chmod", "+x", exeFile)
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("Failed to set executable permission: %v", err)
 	}
 
 	// 运行测试，设置32MB内存限制
@@ -256,7 +290,11 @@ func TestSDUSandboxRunner_RuntimeError(t *testing.T) {
 		SandboxPath: sandboxPath,
 	}
 
-	tempDir := t.TempDir()
+	tempDir, cleanup, err := createTmpDir()
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer cleanup()
 	sourceFile := filepath.Join(tempDir, "segfault.c")
 	exeFile := filepath.Join(tempDir, "segfault")
 
@@ -272,9 +310,13 @@ int main() {
 		t.Fatalf("Failed to write source file: %v", err)
 	}
 
-	cmd := exec.Command("gcc", sourceFile, "-o", exeFile)
+	cmd := exec.Command("gcc", sourceFile, "-o", exeFile, "-static")
 	if err := cmd.Run(); err != nil {
 		t.Fatalf("Failed to compile: %v", err)
+	}
+	cmd = exec.Command("chmod", "+x", exeFile)
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("Failed to set executable permission: %v", err)
 	}
 
 	result := runner.RunInSandbox(model.RunParams{
@@ -305,7 +347,11 @@ func TestSDUSandboxRunner_ResourceMonitoring(t *testing.T) {
 		SandboxPath: sandboxPath,
 	}
 
-	tempDir := t.TempDir()
+	tempDir, cleanup, err := createTmpDir()
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer cleanup()
 	sourceFile := filepath.Join(tempDir, "compute.c")
 	exeFile := filepath.Join(tempDir, "compute")
 
@@ -314,7 +360,7 @@ func TestSDUSandboxRunner_ResourceMonitoring(t *testing.T) {
 #include <stdlib.h>
 int main() {
     int sum = 0;
-    for (int i = 0; i < 10000000; i++) {
+    for (int i = 0; i < 100000000; i++) {
         sum += i;
     }
     printf("%d\n", sum);
@@ -328,6 +374,10 @@ int main() {
 	cmd := exec.Command("gcc", "-O2", sourceFile, "-o", exeFile)
 	if err := cmd.Run(); err != nil {
 		t.Fatalf("Failed to compile: %v", err)
+	}
+	cmd = exec.Command("chmod", "+x", exeFile)
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("Failed to set executable permission: %v", err)
 	}
 
 	result := runner.RunInSandbox(model.RunParams{
@@ -478,7 +528,11 @@ func TestSDUSandboxRunner_Async(t *testing.T) {
 		SandboxPath: sandboxPath,
 	}
 
-	tempDir := t.TempDir()
+	tempDir, cleanup, err := createTmpDir()
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer cleanup()
 	sourceFile := filepath.Join(tempDir, "hello.c")
 	exeFile := filepath.Join(tempDir, "hello")
 
@@ -492,9 +546,13 @@ int main() {
 		t.Fatalf("Failed to write source file: %v", err)
 	}
 
-	cmd := exec.Command("gcc", sourceFile, "-o", exeFile)
+	cmd := exec.Command("gcc", sourceFile, "-o", exeFile, "-static")
 	if err := cmd.Run(); err != nil {
 		t.Fatalf("Failed to compile: %v", err)
+	}
+	cmd = exec.Command("chmod", "+x", exeFile)
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("Failed to set executable permission: %v", err)
 	}
 
 	// 异步运行
@@ -545,7 +603,7 @@ int main() {
 		b.Fatalf("Failed to write source file: %v", err)
 	}
 
-	cmd := exec.Command("gcc", sourceFile, "-o", exeFile)
+	cmd := exec.Command("gcc", sourceFile, "-o", exeFile, "-static")
 	if err := cmd.Run(); err != nil {
 		b.Fatalf("Failed to compile: %v", err)
 	}
@@ -575,7 +633,11 @@ func TestSDUSandboxRunner_MultipleTestCases(t *testing.T) {
 		SandboxPath: sandboxPath,
 	}
 
-	tempDir := t.TempDir()
+	tempDir, cleanup, err := createTmpDir()
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer cleanup()
 	sourceFile := filepath.Join(tempDir, "multiply.c")
 	exeFile := filepath.Join(tempDir, "multiply")
 
@@ -591,9 +653,17 @@ int main() {
 		t.Fatalf("Failed to write source file: %v", err)
 	}
 
-	cmd := exec.Command("gcc", sourceFile, "-o", exeFile)
+	cmd := exec.Command("gcc", sourceFile, "-o", exeFile, "-static")
 	if err := cmd.Run(); err != nil {
 		t.Fatalf("Failed to compile: %v", err)
+	}
+	cmd = exec.Command("chmod", "+x", exeFile)
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("Failed to set executable permission: %v", err)
+	}
+	cmd = exec.Command("chmod", "+x", exeFile)
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("Failed to set executable permission: %v", err)
 	}
 
 	testCases := []struct {

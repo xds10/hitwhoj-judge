@@ -62,8 +62,9 @@ func (nr *NsJailRunner) RunInSandbox(runParams model.RunParams) *model.TestCaseR
 			Error:         fmt.Sprintf("获取可执行文件绝对路径失败: %v", err),
 		}
 	}
+	fmt.Println("absExePath", absExePath)
 	exeDir := filepath.Dir(absExePath)
-
+	fmt.Println("exeDir", exeDir)
 	// 构建NsJail命令
 	// 添加资源限制参数
 	cmd := exec.Command(
