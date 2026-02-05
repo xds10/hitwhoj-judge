@@ -1,6 +1,6 @@
 server:
   name: "hitwhoj-judge"
-  mode: "${SERVER_MODE:-dev}"  # 占位符+默认值：没配置则用dev
+  mode: "${SERVER_MODE:-dev}"
   port: "${SERVER_PORT:-53333}"
   version: "v0.0.1"
 
@@ -9,7 +9,7 @@ snowflake:
   machine_id: "${SNOWFLAKE_MACHINE_ID:-1}"
 
 jwt:
-  access_secret: "${JWT_ACCESS_SECRET}"  # 无默认值，必须在.env配置
+  access_secret: "${JWT_ACCESS_SECRET}"
   refresh_secret: "${JWT_REFRESH_SECRET}"
   access_expire_seconds: 3600
   refresh_expire_seconds: 86400
@@ -25,7 +25,7 @@ mysql:
   host: "${MYSQL_HOST:-127.0.0.1}"
   port: "${MYSQL_PORT:-3306}"
   user: "${MYSQL_USER:-user}"
-  password: "${MYSQL_PASSWORD}"  # 敏感字段，必须配置
+  password: "${MYSQL_PASSWORD}"
   dbname: "${MYSQL_DBNAME:-dbname}"
   max_open_conns: 200
   max_idle_conns: 50
@@ -35,7 +35,7 @@ postgres:
   host: "${PG_HOST:-127.0.0.1}"
   port: "${PG_PORT:-5433}"
   user: "${PG_USER:-postgres}"
-  password: "${PG_PASSWORD}"  # 敏感字段
+  password: "${PG_PASSWORD}"
   dbname: "${PG_DBNAME:-hitwhoj_rebirth}"
   max_idle_conns: 10
   max_open_conns: 100
@@ -44,13 +44,28 @@ postgres:
 redis:
   host: "${REDIS_HOST:-127.0.0.1}"
   port: "${REDIS_PORT:-6379}"
-  password: "${REDIS_PASSWORD:-}"  # 默认空
+  password: "${REDIS_PASSWORD:-}"
   db: 0
   pool_size: 10
 
 minio:
   endpoint: "${MINIO_ENDPOINT:-192.168.0.174:9001}"
-  access_key: "${MINIO_ACCESS_KEY}"  # 敏感字段
+  access_key: "${MINIO_ACCESS_KEY}"
   secret_key: "${MINIO_SECRET_KEY}"
   use_ssl: "${MINIO_USE_SSL:-false}"
   region: ""
+
+# 评测机配置
+judge:
+  max_concurrent: "${JUDGE_MAX_CONCURRENT:-2}"  # 最大并发评测数（建议设置为CPU核心数）
+  max_timeout: "${JUDGE_MAX_TIMEOUT:-300}"      # 单个评测最大超时时间（秒）
+  temp_dir: "${JUDGE_TEMP_DIR:-}"               # 临时目录（空则使用系统默认）
+  enable_early_stop: "${JUDGE_EARLY_STOP:-false}"  # 遇到错误是否提前终止
+  max_output_size: "${JUDGE_MAX_OUTPUT_SIZE:-10485760}"  # 最大输出大小（字节，默认10MB）
+  enable_compile_cache: "${JUDGE_COMPILE_CACHE:-false}"  # 是否启用编译缓存
+  
+# 缓存配置
+cache:
+  test_case_ttl: "${CACHE_TEST_CASE_TTL:-1800}"  # 测试用例缓存时间（秒，默认30分钟）
+  max_disk_usage: "${CACHE_MAX_DISK_USAGE:-2147483648}"  # 最大磁盘使用（字节，默认2GB）
+  clean_frequency: "${CACHE_CLEAN_FREQ:-600}"    # 清理频率（秒，默认10分钟）

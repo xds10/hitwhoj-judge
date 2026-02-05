@@ -23,6 +23,14 @@ func SetupRoutes(cfg *viper.Viper) *gin.Engine {
 	corsCfg.AllowHeaders = append(corsCfg.AllowHeaders, "Authorization")
 	corsCfg.AllowAllOrigins = true
 	r.Use(cors.New(corsCfg)) // CORS 跨域中间件，简单粗暴，直接放行所有跨域请求
+
+	// 健康检查和监控端点（不需要认证）
+	r.GET("/health", handler.HealthCheckHandler)
+	r.GET("/metrics", handler.MetricsHandler)
+	r.GET("/system", handler.SystemInfoHandler)
+	r.GET("/readiness", handler.ReadinessHandler)
+	r.GET("/liveness", handler.LivenessHandler)
+
 	apiV1 := r.Group("/api/v1")
 	{
 		apiV1.GET("/add", calc.AddHandler())
