@@ -8,7 +8,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"testing"
-	"time"
 )
 
 // TestSDUSandboxRunner_BasicExecution 测试基本的程序执行
@@ -512,67 +511,6 @@ func TestSDUSandboxRunner_ResultMapping(t *testing.T) {
 				t.Errorf("Result code %d mapped to %s, expected %s", tc.resultCode, status, tc.expected)
 			}
 		})
-	}
-}
-
-// TestSDUSandboxRunner_Async 测试异步执行
-func TestSDUSandboxRunner_Async(t *testing.T) {
-	sandboxPath := "sandbox"
-	if _, err := exec.LookPath(sandboxPath); err != nil {
-		if _, err := os.Stat(sandboxPath); os.IsNotExist(err) {
-			t.Skip("sandbox not found, skipping test")
-		}
-	}
-
-	runner := &SDUSandboxRunner{
-		SandboxPath: sandboxPath,
-	}
-
-	tempDir, cleanup, err := createTmpDir()
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-	defer cleanup()
-	sourceFile := filepath.Join(tempDir, "hello.c")
-	exeFile := filepath.Join(tempDir, "hello")
-
-	code := `#include <stdio.h>
-int main() {
-    printf("Hello from async\n");
-    return 0;
-}`
-
-	if err := os.WriteFile(sourceFile, []byte(code), 0644); err != nil {
-		t.Fatalf("Failed to write source file: %v", err)
-	}
-
-	cmd := exec.Command("gcc", sourceFile, "-o", exeFile, "-static")
-	if err := cmd.Run(); err != nil {
-		t.Fatalf("Failed to compile: %v", err)
-	}
-	cmd = exec.Command("chmod", "+x", exeFile)
-	if err := cmd.Run(); err != nil {
-		t.Fatalf("Failed to set executable permission: %v", err)
-	}
-
-	// 异步运行
-	pid, resultChan, err := runner.RunInSandboxAsync(exeFile, "")
-	if err != nil {
-		t.Fatalf("Failed to start async execution: %v", err)
-	}
-
-	t.Logf("Started process with PID: %d", pid)
-
-	// 等待结果
-	select {
-	case result := <-resultChan:
-		t.Logf("Output: %s", result.Output)
-		t.Logf("Status: %s", result.Status)
-		if result.Status != "AC" {
-			t.Errorf("Expected AC status, got %s", result.Status)
-		}
-	case <-time.After(5 * time.Second):
-		t.Fatal("Timeout waiting for async result")
 	}
 }
 

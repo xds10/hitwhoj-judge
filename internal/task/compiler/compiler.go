@@ -1,6 +1,9 @@
 package compiler
 
-import "hitwh-judge/internal/conf"
+import (
+	"hitwh-judge/internal/conf"
+	"hitwh-judge/internal/constants"
+)
 
 type Language string
 
@@ -21,11 +24,33 @@ type Compiler interface {
 	Compile(codePath, exePath string) (string, error)
 }
 
+// NewCompiler 创建编译器实例
 func NewCompiler(lang Language) Compiler {
 	switch lang {
 	case LanguageC:
+		gccPath := conf.DefaultOptions.GCPath
+		if gccPath == "" {
+			gccPath = constants.GCCPath
+		}
 		return &CCompiler{
-			GCPath: conf.DefaultOptions.GCPath,
+			GCPath: gccPath,
+		}
+	case LanguageCpp:
+		return &CppCompiler{
+			GPPPath: constants.GPPPath,
+			Flags:   constants.GPPDefaultFlags,
+		}
+	case LanguageJava:
+		return &JavaCompiler{
+			JavacPath: constants.JavacPath,
+		}
+	case LanguagePython:
+		return &PythonCompiler{
+			PythonPath: constants.PythonPath,
+		}
+	case LanguageGo:
+		return &GoCompiler{
+			GoPath: constants.GoPath,
 		}
 	default:
 		return nil

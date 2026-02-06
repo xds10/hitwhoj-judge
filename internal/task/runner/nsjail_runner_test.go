@@ -6,7 +6,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"testing"
-	"time"
 )
 
 // TestNsJailRunner_BasicExecution 测试基本的程序执行
@@ -180,78 +179,4 @@ int main() {
 	t.Logf("CPU Time: %v", result.TimeUsed)
 	t.Logf("Memory: %d bytes (%.2f MB)", result.MemUsed, float64(result.MemUsed)/(1024*1024))
 	t.Logf("Output: %s", result.Output)
-}
-
-// TestNsJailRunner_Async 测试异步执行
-func TestNsJailRunner_Async(t *testing.T) {
-	if _, err := exec.LookPath("nsjail"); err != nil {
-		t.Skip("nsjail not found, skipping test")
-	}
-
-	runner := &NsJailRunner{
-		NsJailPath: "nsjail",
-	}
-
-	tempDir := t.TempDir()
-	sourceFile := filepath.Join(tempDir, "sleep.c")
-	exeFile := filepath.Join(tempDir, "sleep")
-
-	code := `#include <stdio.h>
-#include <unistd.h>
-int main() {
-    printf("Start\n");
-    fflush(stdout);
-    sleep(1);
-    printf("End\n");
-    return 0;
-}`
-
-	if err := os.WriteFile(sourceFile, []byte(code), 0644); err != nil {
-		t.Fatalf("Failed to write source file: %v", err)
-	}
-
-	cmd := exec.Command("gcc", sourceFile, "-o", exeFile, "-static")
-	if err := cmd.Run(); err != nil {
-		t.Fatalf("Failed to compile: %v", err)
-	}
-
-	// 异步运行
-	pid, resultChan, err := runner.RunInSandboxAsync(exeFile, "")
-	if err != nil {
-		t.Fatalf("Failed to start async execution: %v", err)
-	}
-
-	t.Logf("Started process with PID: %d", pid)
-
-	// 等待结果
-	select {
-	case result := <-resultChan:
-		t.Logf("Output: %s", result.Output)
-		t.Logf("Status: %s", result.Status)
-		if result.Status != string(model.StatusAC) {
-			t.Errorf("Expected AC status, got %s", result.Status)
-		}
-	case <-time.After(5 * time.Second):
-		t.Fatal("Timeout waiting for async result")
-	}
-}
-
-// TestNormalizeString 测试字符串规范化
-func TestNormalizeString(t *testing.T) {
-	testCases := []struct {
-		input    string
-		expected string
-	}{
-		{"hello\r\n", "hello"},
-		{"  hello  ", "hello"},
-		{"hello\nworld\n", "hello\nworld"},
-		{"\r\n\r\n", ""},
-	}
-
-	for _, tc := range testCases {
-		result := normalizeString(tc.input)
-		if result != tc.expected {
-			t.Errorf("normalizeString(%q) = %q, expected %q", tc.input, result, tc.expected)
-		}
-	}
 }

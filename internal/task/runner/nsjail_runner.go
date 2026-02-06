@@ -64,7 +64,6 @@ func (nr *NsJailRunner) RunInSandbox(runParams model.RunParams) *model.TestCaseR
 	}
 	fmt.Println("absExePath", absExePath)
 	exeDir := filepath.Dir(absExePath)
-	fmt.Println("exeDir", exeDir)
 	// 构建NsJail命令
 	// 添加资源限制参数
 	cmd := exec.Command(
@@ -176,85 +175,6 @@ func (nr *NsJailRunner) RunInSandbox(runParams model.RunParams) *model.TestCaseR
 	}
 
 	return testCaseResult
-}
-
-// RunInSandboxAsync 异步运行沙箱程序，返回进程PID和控制通道
-func (nr *NsJailRunner) RunInSandboxAsync(exePath, input string) (int, <-chan RunResult, error) {
-	// 检查nsjail是否存在
-	if _, err := exec.LookPath(nr.NsJailPath); err != nil {
-		return 0, nil, err
-	}
-
-	// 获取可执行文件的绝对路径
-	absExePath, err := filepath.Abs(exePath)
-	if err != nil {
-		return 0, nil, fmt.Errorf("获取可执行文件绝对路径失败: %w", err)
-	}
-	exeDir := filepath.Dir(absExePath)
-
-	// 构建NsJail命令
-	cmd := exec.Command(
-		nr.NsJailPath,
-		"-Mo", "-N",
-		"--rlimit_nproc", "32",
-		"--chroot", exeDir,
-		"--user", "99999",
-		"--group", "99999",
-		"--disable_clone_newuser",
-		"--",
-		filepath.Base(absExePath),
-	)
-
-	// 设置输入
-	var stdin bytes.Buffer
-	if input != "" {
-		stdin.WriteString(normalizeString(input))
-	}
-	cmd.Stdin = &stdin
-
-	// 捕获输出和错误
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-
-	// 启动命令（非阻塞）
-	if err := cmd.Start(); err != nil {
-		return 0, nil, fmt.Errorf("启动nsjail进程失败: %w", err)
-	}
-
-	// 创建结果通道
-	resultChan := make(chan RunResult, 1)
-
-	// 启动goroutine等待命令执行完成
-	go func() {
-		defer close(resultChan)
-
-		// 等待命令执行完成
-		err := cmd.Wait()
-		output := normalizeString(stdout.String())
-		errOutput := stderr.String()
-
-		// 解析错误类型
-		status := model.StatusAC
-		if err != nil {
-			if exitErr, ok := err.(*exec.ExitError); ok {
-				status, _ = parseNsJailError(errOutput, exitErr, 0, 0, 0, 0)
-			} else {
-				status = model.StatusRE
-			}
-		}
-
-		// 发送结果
-		resultChan <- RunResult{
-			Output:    output,
-			ErrOutput: errOutput,
-			Status:    string(status),
-			Err:       err,
-		}
-	}()
-
-	// 返回进程PID和结果通道
-	return cmd.Process.Pid, resultChan, nil
 }
 
 // parseNsJailError 解析NsJail运行错误
