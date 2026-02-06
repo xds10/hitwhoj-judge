@@ -238,7 +238,7 @@ func judgeImproved(config *model.TaskConfig, task *model.JudgeTask) (*model.Judg
 				testCaseResult.Status = model.StatusAC
 			} else {
 				testCaseResult.Status = model.StatusWA
-				testCaseResult.Error = fmt.Sprintf("输出不匹配")
+				testCaseResult.Error = "输出不匹配"
 				// 只在日志中记录详细差异，避免返回过大数据
 				zap.L().Debug("输出不匹配",
 					zap.Int("case", i),
