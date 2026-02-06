@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	v1 "hitwh-judge/api/calc/v1"
-	"hitwh-judge/internal/cache"
 	"hitwh-judge/internal/model"
 	"hitwh-judge/internal/task/compiler"
 	"hitwh-judge/internal/task/language"
@@ -13,7 +12,6 @@ import (
 	"hitwh-judge/pkg/snowflake"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 	"time"
 
@@ -165,7 +163,7 @@ func judgeImproved(config *model.TaskConfig, task *model.JudgeTask) (*model.Judg
 	startTime := time.Now()
 
 	// 1. 创建临时目录
-	tempDir, cleanup, err := createTmpDirImproved()
+	tempDir, cleanup, err := createTmpDir()
 	if err != nil {
 		return nil, err
 	}
@@ -201,7 +199,7 @@ func judgeImproved(config *model.TaskConfig, task *model.JudgeTask) (*model.Judg
 	}
 
 	// 4. 下载测试用例
-	if err := downloadCaseImproved(task); err != nil {
+	if err := downloadCase(task); err != nil {
 		return nil, fmt.Errorf("下载测试用例失败: %w", err)
 	}
 
@@ -376,67 +374,6 @@ func truncateString(s string, maxLen int) string {
 		return s
 	}
 	return s[:maxLen] + "..."
-}
-
-// normalizeStringImproved 清理字符串中的换行符（统一为\n，去除首尾空白）
-func normalizeStringImproved(s string) string {
-	s = strings.ReplaceAll(s, "\r\n", "\n")
-	return strings.TrimSpace(s)
-}
-
-// downloadCaseImproved 下载测试用例
-func downloadCaseImproved(task *model.JudgeTask) error {
-	testCache := cache.GetEnhancedTestFileCache()
-	for i := range task.TestCases {
-		// 下载输入文件
-		inputFilePath, err := testCache.DownloadFileByMD5WithCache(task.FileBucket, task.TestCases[i].InputFile)
-		if err != nil {
-			return fmt.Errorf("下载输入文件失败 (case %d): %w", i, err)
-		}
-
-		inputContent, err := os.ReadFile(inputFilePath)
-		if err != nil {
-			return fmt.Errorf("读取输入文件失败 (case %d): %w", i, err)
-		}
-		task.TestCases[i].Input = string(inputContent)
-
-		// 下载输出文件
-		outputFilePath, err := testCache.DownloadFileByMD5WithCache(task.FileBucket, task.TestCases[i].OutputFile)
-		if err != nil {
-			return fmt.Errorf("下载输出文件失败 (case %d): %w", i, err)
-		}
-
-		outputContent, err := os.ReadFile(outputFilePath)
-		if err != nil {
-			return fmt.Errorf("读取输出文件失败 (case %d): %w", i, err)
-		}
-		task.TestCases[i].Output = string(outputContent)
-	}
-	return nil
-}
-
-// createTmpDirImproved 创建临时目录
-func createTmpDirImproved() (string, func(), error) {
-	tempDir, err := os.MkdirTemp("", "oj-judge-*")
-	if err != nil {
-		return "", nil, fmt.Errorf("创建临时目录失败: %w", err)
-	}
-
-	if err := os.Chmod(tempDir, 0777); err != nil {
-		_ = os.RemoveAll(tempDir)
-		return "", nil, fmt.Errorf("修改临时目录权限失败: %w", err)
-	}
-
-	cleanup := func() {
-		if err := os.RemoveAll(tempDir); err != nil {
-			zap.L().Warn("清理临时目录失败", zap.String("dir", tempDir), zap.Error(err))
-		} else {
-			zap.L().Debug("成功清理临时评测目录", zap.String("dir", tempDir))
-		}
-	}
-
-	zap.L().Debug("创建临时评测目录", zap.String("dir", tempDir))
-	return tempDir, cleanup, nil
 }
 
 // GetJudgeStats 获取评测统计信息（用于监控）
