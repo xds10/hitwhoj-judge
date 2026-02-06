@@ -186,7 +186,7 @@ func parseNsJailError(stderr string, exitErr *exec.ExitError, cpuTime time.Durat
 				signal := waitStatus.Signal()
 				switch signal {
 				case syscall.SIGXCPU:
-					return model.StatusTLE, fmt.Sprintf("CPU时间超限信号 (SIGXCPU)")
+					return model.StatusTLE, "CPU时间超限信号 (SIGXCPU)"
 				case syscall.SIGKILL:
 					// SIGKILL可能是内存超限或时间超限
 					if strings.Contains(stderr, "memory limit exceeded") || strings.Contains(stderr, "rlimit_as") {
