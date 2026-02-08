@@ -15,6 +15,7 @@ type JudgeTask struct {
 	// UserID      int        `json:"user_id"`      // 用户ID
 	// ProblemID   int        `json:"problem_id"`   // 题目ID
 	// ContestID   *int       `json:"contest_id"`   // 比赛ID（可选）
+	TempDir     string     `json:"temp_dir"`     // 临时目录
 	Code        string     `json:"code"`         // 用户代码
 	Config      TaskConfig `json:"config"`       // 评测配置
 	TestCases   []TestCase `json:"test_cases"`   // 测试用例列表

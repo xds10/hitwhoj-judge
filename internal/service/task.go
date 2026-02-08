@@ -11,6 +11,7 @@ import (
 	"hitwh-judge/internal/task/language"
 	"hitwh-judge/internal/task/result"
 	"hitwh-judge/internal/task/runner"
+	file_util "hitwh-judge/internal/util/file"
 	"hitwh-judge/pkg/snowflake"
 	"os"
 	"path/filepath"
@@ -171,6 +172,7 @@ func judge(config *model.TaskConfig, task *model.JudgeTask) (*model.JudgeResult,
 		return nil, err
 	}
 	defer cleanup()
+	task.TempDir = tempDir
 
 	// 2. 写入用户代码
 	codeFileName := language.GetCodeFileName(config.Language)
@@ -217,6 +219,7 @@ func judge(config *model.TaskConfig, task *model.JudgeTask) (*model.JudgeResult,
 			TestCaseIndex: i,
 			ExePath:       exePath,
 			Input:         checkPoint.Input,
+			InputFile:     checkPoint.InputFile,
 			TimeLimit:     int64(config.TimeLimit),
 			MemLimit:      int64(config.MemoryLimit),
 		}
@@ -407,24 +410,27 @@ func downloadCase(task *model.JudgeTask) (err error) {
 		if err != nil {
 			return err
 		}
-		// 读取输入文件内容
-		inputContent, err := os.ReadFile(inputFilePath)
-		if err != nil {
+		dstInputFile := filepath.Join(task.TempDir, fmt.Sprintf("input_%d.txt", i))
+		if err := file_util.CopyFile(inputFilePath, dstInputFile); err != nil {
 			return err
 		}
-		task.TestCases[i].Input = string(inputContent)
+		task.TestCases[i].InputFile = dstInputFile
 
 		// 下载输出文件
 		outputFilePath, err := testCache.DownloadFileByMD5WithCache(task.FileBucket, task.TestCases[i].OutputFile)
 		if err != nil {
 			return err
 		}
-		// 读取输出文件内容
-		outputContent, err := os.ReadFile(outputFilePath)
+		dstOutputFile := filepath.Join(task.TempDir, fmt.Sprintf("output_%d.txt", i))
+		if err := file_util.CopyFile(outputFilePath, dstOutputFile); err != nil {
+			return err
+		}
+		task.TestCases[i].OutputFile = dstOutputFile
+		output, err := file_util.ReadFileToString(dstOutputFile)
 		if err != nil {
 			return err
 		}
-		task.TestCases[i].Output = string(outputContent)
+		task.TestCases[i].Output = normalizeString(output)
 	}
 	return nil
 }

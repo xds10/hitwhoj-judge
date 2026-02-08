@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"hitwh-judge/internal/model"
+	"io/ioutil"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -40,7 +41,7 @@ type ResourceUsage struct {
 // RunInSandbox 在NsJail沙箱中运行程序，返回详细的资源使用信息
 func (nr *NsJailRunner) RunInSandbox(runParams model.RunParams) *model.TestCaseResult {
 	exePath := runParams.ExePath
-	input := runParams.Input
+	// input := runParams.Input
 	timeLimit := runParams.TimeLimit
 	memoryLimit := runParams.MemLimit
 
@@ -64,9 +65,30 @@ func (nr *NsJailRunner) RunInSandbox(runParams model.RunParams) *model.TestCaseR
 	}
 	fmt.Println("absExePath", absExePath)
 	exeDir := filepath.Dir(absExePath)
+
+	scriptSrcPath := "./scripts/runner/normal_judge.sh"
+	scriptDstPath := filepath.Join(exeDir, "normal_judge.sh")
+
+	scriptContent, err := ioutil.ReadFile(scriptSrcPath)
+	if err != nil {
+		return &model.TestCaseResult{
+			TestCaseIndex: runParams.TestCaseIndex,
+			Status:        model.StatusSE,
+			Error:         fmt.Sprintf("无法读取normal_judge.sh脚本: %v", err),
+		}
+	}
+
+	if err := ioutil.WriteFile(scriptDstPath, scriptContent, 0755); err != nil {
+		return &model.TestCaseResult{
+			TestCaseIndex: runParams.TestCaseIndex,
+			Status:        model.StatusSE,
+			Error:         fmt.Sprintf("无法写入normal_judge.sh脚本到执行目录: %v", err),
+		}
+	}
 	// 构建NsJail命令
 	// 添加资源限制参数
 	cmd := exec.Command(
+		"sudo",
 		nr.NsJailPath,
 		"-Mo",                  // 一次性模式
 		"-N",                   // 禁用网络
@@ -78,16 +100,35 @@ func (nr *NsJailRunner) RunInSandbox(runParams model.RunParams) *model.TestCaseR
 		"--user", "99999", // 使用非特权用户
 		"--group", "99999", // 使用非特权组
 		"--disable_clone_newuser", // 禁用user namespace
+		"--bindmount_ro", "/bin",  // 挂载/bin目录
+		"--bindmount_ro", "/lib", // 挂载/lib目录
+		"--bindmount_ro", "/lib64", // 挂载/lib64目录
 		"--",
+		"/bin/bash",
+		"normal_judge.sh",
 		filepath.Base(absExePath),
+		filepath.Base(runParams.InputFile),
 	)
 
-	// 设置输入
-	var stdin bytes.Buffer
-	if input != "" {
-		stdin.WriteString(normalizeString(input))
+	inputFileReader, err := ioutil.ReadFile(runParams.InputFile)
+	if err != nil {
+		return &model.TestCaseResult{
+			TestCaseIndex: runParams.TestCaseIndex,
+			Status:        model.StatusSE,
+			Error:         fmt.Sprintf("读取临时输入文件失败: %v", err),
+		}
 	}
+
+	var stdin bytes.Buffer
+	stdin.Write(inputFileReader)
 	cmd.Stdin = &stdin
+
+	// 设置输入
+	// var stdin bytes.Buffer
+	// if input != "" {
+	// 	stdin.WriteString(normalizeString(input))
+	// }
+	// cmd.Stdin = &stdin
 
 	// 捕获输出和错误
 	var stdout, stderr bytes.Buffer
@@ -131,6 +172,7 @@ func (nr *NsJailRunner) RunInSandbox(runParams model.RunParams) *model.TestCaseR
 	var errorMsg string
 
 	if err != nil {
+		zap.L().Error("NsJail execution error", zap.Error(err), zap.String("stderr", errOutput))
 		if exitErr, ok := err.(*exec.ExitError); ok {
 			status, errorMsg = parseNsJailError(errOutput, exitErr, cpuTime, timeLimit, memUsed, memoryLimit)
 		} else {

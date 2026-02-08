@@ -1,4 +1,4 @@
-package file
+package file_util
 
 import (
 	"fmt"
@@ -137,25 +137,5 @@ func WithBufferSize(size int) CopyOption {
 func WithOverwrite(overwrite bool) CopyOption {
 	return func(c *copyConfig) {
 		c.overwrite = overwrite
-	}
-}
-
-// 使用示例
-func main() {
-	// 基本复制
-	err := CopyFile("source.txt", "dest.txt")
-	if err != nil {
-		panic(err)
-	}
-
-	// 自定义选项复制
-	err = CopyFile("source.txt", "dest.txt",
-		WithBufferSize(64*1024), // 64KB缓冲区
-		WithPreservePerm(true),  // 保留权限
-		WithPreserveTime(true),  // 保留时间
-		WithOverwrite(false),    // 不覆盖已存在文件
-	)
-	if err != nil {
-		panic(err)
 	}
 }
