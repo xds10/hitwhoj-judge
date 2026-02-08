@@ -26,7 +26,7 @@ func AddTaskHandler(c *gin.Context) {
 	// ✅ 添加超时保护（避免请求阻塞）
 	// ✅ 完善错误处理
 	// ✅ 详细的日志记录
-	judgeResult, err := service.AddTaskImproved(c, req)
+	judgeResult, err := service.AddTask(c, req)
 	if err != nil {
 		zap.L().Error("add-task failed", zap.Error(err))
 		api.ResponseError(c, api.CodeInternalError)
