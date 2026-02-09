@@ -216,6 +216,7 @@ func judge(config *model.TaskConfig, task *model.JudgeTask) (*model.JudgeResult,
 
 	for i, checkPoint := range task.TestCases {
 		runParams := model.RunParams{
+			TaskID:        task.TaskID,
 			TestCaseIndex: i,
 			ExePath:       exePath,
 			Input:         checkPoint.Input,
@@ -316,9 +317,14 @@ func runSandboxSafe(runParams model.RunParams) (result *model.TestCaseResult, er
 	// sduSandboxConfig := runner.GetDefaultSandboxConfig(runner.SDUSandbox)
 	// sduSandbox := runner.NewRunner(runner.SDUSandbox, sduSandboxConfig.Path)
 	// testCaseResult := sduSandbox.RunInSandbox(runParams)
-	nsJail := runner.GetDefaultSandboxConfig(runner.NsJail)
-	nsjailSandBox := runner.NewRunner(runner.NsJail, nsJail.Path)
-	testCaseResult := nsjailSandBox.RunInSandbox(runParams)
+	// nsJail := runner.GetDefaultSandboxConfig(runner.NsJail)
+	// nsjailSandBox := runner.NewRunner(runner.NsJail, nsJail.Path)
+	// testCaseResult := nsjailSandBox.RunInSandbox(runParams)
+
+	// Isolate
+	isolate := runner.GetDefaultSandboxConfig(runner.Isolate)
+	isolateSandBox := runner.NewRunner(runner.Isolate, isolate.Path)
+	testCaseResult := isolateSandBox.RunInSandbox(runParams)
 
 	if testCaseResult == nil {
 		return nil, fmt.Errorf("沙箱返回结果为空")

@@ -25,6 +25,7 @@ type JudgeTask struct {
 }
 
 type RunParams struct {
+	TaskID        int64  `json:"task_id"`         // 任务唯一标识
 	TestCaseIndex int    `json:"test_case_index"` // 测试用例索引
 	ExePath       string `json:"exe_path"`        // 可执行文件路径
 	Input         string `json:"input"`           // 输入数据

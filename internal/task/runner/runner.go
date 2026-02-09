@@ -9,6 +9,7 @@ type SandboxType int
 const (
 	NsJail SandboxType = iota
 	SDUSandbox
+	Isolate
 )
 
 // Runner 沙箱运行器接口
@@ -35,6 +36,11 @@ func NewRunner(sandboxType SandboxType, sandboxPath string) Runner {
 		return &SDUSandboxRunner{
 			SandboxPath: sandboxPath,
 		}
+	case Isolate:
+		return &IsoRunner{
+			IsolatePath: sandboxPath,
+			boxId:       0,
+		}
 	default:
 		return nil
 	}
@@ -47,6 +53,8 @@ func GetDefaultSandboxConfig(sandboxType SandboxType) model.SandboxConfig {
 		return DefaultNsJailSandboxConfig
 	case SDUSandbox:
 		return DefaultSDUSandboxConfig
+	case Isolate:
+		return DefaultIsolateSandboxConfig
 	default:
 		return model.SandboxConfig{}
 	}

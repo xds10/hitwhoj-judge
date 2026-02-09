@@ -58,6 +58,10 @@ const (
 	// SDU Sandbox 配置
 	SDUSandboxDefaultPath = "sandbox"
 	SDUSandboxSeccompRule = "general"
+
+	NormalJudgePath = "./script/normal_judge.sh"
+
+	BoxIDPoolSize = 500
 )
 
 // 文件名常量

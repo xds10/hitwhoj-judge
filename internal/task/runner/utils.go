@@ -6,6 +6,7 @@ import (
 	"hitwh-judge/internal/constants"
 	"os"
 	"strings"
+	"sync"
 
 	"go.uber.org/zap"
 )
@@ -102,4 +103,37 @@ func sanitizeError(errMsg string) string {
 		return errMsg[:constants.MaxErrorSize] + "..."
 	}
 	return errMsg
+}
+
+// 全局box ID池，用于管理0-999范围内的ID分配
+var (
+	boxIDPoolMu sync.Mutex
+	boxIDPool   = make([]bool, constants.BoxIDPoolSize) // 索引0-999，false表示未占用，true表示已占用
+)
+
+// allocateBoxID 动态分配一个0-999范围内的box ID
+func allocateBoxID() int {
+	boxIDPoolMu.Lock()
+	defer boxIDPoolMu.Unlock()
+
+	// 查找第一个未占用的ID
+	for i := 0; i < constants.BoxIDPoolSize; i++ {
+		if !boxIDPool[i] {
+			boxIDPool[i] = true // 标记为已占用
+			return i
+		}
+	}
+
+	// 如果所有ID都被占用，返回-1表示分配失败
+	// 实际上这种情况不应该发生，因为我们会在defer中释放ID
+	return -1
+}
+
+// releaseBoxID 释放指定的box ID
+func releaseBoxID(id int) {
+	if id >= 0 && id < constants.BoxIDPoolSize {
+		boxIDPoolMu.Lock()
+		defer boxIDPoolMu.Unlock()
+		boxIDPool[id] = false // 标记为未占用
+	}
 }
