@@ -313,6 +313,16 @@ func (c *EnhancedTestFileCache) removeCacheEntry(bucket, md5 string) {
 
 // DownloadFileByMD5WithCache 使用缓存下载文件（返回文件路径）
 func (c *EnhancedTestFileCache) DownloadFileByMD5WithCache(bucket, md5 string) (string, error) {
+	if bucket == "" || md5 == "" {
+		// 当MD5为空时，创建一个空文件并返回其路径
+		tempFile, err := os.CreateTemp(c.cacheDir, "empty_file_")
+		if err != nil {
+			return "", err
+		}
+		defer tempFile.Close()
+		return tempFile.Name(), nil
+	}
+
 	// 先尝试从缓存获取文件路径
 	cachedFilePath, found := c.GetFilePath(bucket, md5)
 
@@ -341,6 +351,9 @@ func (c *EnhancedTestFileCache) DownloadFileByMD5WithCache(bucket, md5 string) (
 
 // DownloadFileByMD5WithCacheContent 使用缓存下载文件（返回内容）
 func (c *EnhancedTestFileCache) DownloadFileByMD5WithCacheContent(bucket, md5 string) (string, error) {
+	if bucket == "" || md5 == "" {
+		return "", nil
+	}
 	// 先尝试从缓存获取内容
 	if cachedContent, found := c.GetFileContent(bucket, md5); found {
 		return cachedContent, nil

@@ -160,6 +160,7 @@ func (ir *IsoRunner) RunInSandbox(runParams model.RunParams) *model.TestCaseResu
 	var exitSig int
 
 	lines := strings.Split(metaContent, "\n")
+	zap.L().Info("Isolate meta content", zap.String("meta", metaContent))
 	for _, line := range lines {
 		parts := strings.SplitN(line, ":", 2)
 		if len(parts) >= 2 {
@@ -171,7 +172,7 @@ func (ir *IsoRunner) RunInSandbox(runParams model.RunParams) *model.TestCaseResu
 				if t, err := strconv.ParseFloat(value, 64); err == nil {
 					cpuTime = time.Duration(t * float64(time.Second))
 				}
-			case "max-rss":
+			case "cg-mem":
 				if m, err := strconv.ParseInt(value, 10, 64); err == nil {
 					memUsed = m * 1024 // convert KB to bytes
 				}
@@ -185,6 +186,9 @@ func (ir *IsoRunner) RunInSandbox(runParams model.RunParams) *model.TestCaseResu
 				}
 			case "killed":
 				isKilled = true
+			case "cg-oom-killed":
+				isKilled = true
+				memUsed = memoryLimit * 1024 * 1024 * 2
 			}
 		}
 	}

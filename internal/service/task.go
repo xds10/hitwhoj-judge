@@ -132,7 +132,7 @@ func AddTask(ctx context.Context, req *v1.TaskReq) (*model.JudgeResult, error) {
 	errChan := make(chan error, 1)
 
 	go func() {
-		if config.JudgeType == model.JudgeNormal {
+		if config.JudgeType != model.JudgeSpecial {
 			judgeResult, err := judge(&config, judgeTask)
 			if err != nil {
 				errChan <- err
@@ -225,6 +225,8 @@ func judge(config *model.TaskConfig, task *model.JudgeTask) (*model.JudgeResult,
 			InputFile:     checkPoint.InputFile,
 			TimeLimit:     int64(config.TimeLimit),
 			MemLimit:      int64(config.MemoryLimit),
+			Config:        *config,
+			SpecialCode:   task.SpecialCode,
 		}
 
 		testCaseResult, err := runSandboxSafe(runParams)
@@ -335,6 +337,10 @@ func runSandboxSafe(runParams model.RunParams) (result *model.TestCaseResult, er
 		isolate := runner.GetDefaultSandboxConfig(runner.Isolate)
 		isolateSandBox := runner.NewRunner(runner.Isolate, isolate.Path)
 		testCaseResult = isolateSandBox.RunInSandbox(runParams)
+
+		// isolate := runner.GetDefaultSandboxConfig(runner.NsJail)
+		// isolateSandBox := runner.NewRunner(runner.NsJail, isolate.Path)
+		// testCaseResult = isolateSandBox.RunInSandbox(runParams)
 	}
 
 	if testCaseResult == nil {

@@ -260,6 +260,14 @@ func (nr *NsJailRunner) RunInteractiveInSandbox(runParams model.RunParams) *mode
 			Error:         fmt.Sprintf("无法写入oj_interactive_judge.sh脚本到执行目录: %v", err),
 		}
 	}
+	interactorDstPath := filepath.Join(exeDir, "interactor.cpp")
+	if err := ioutil.WriteFile(interactorDstPath, []byte(*runParams.SpecialCode), 0755); err != nil {
+		return &model.TestCaseResult{
+			TestCaseIndex: runParams.TestCaseIndex,
+			Status:        model.StatusSE,
+			Error:         fmt.Sprintf("无法写入interactor.cpp到执行目录: %v", err),
+		}
+	}
 
 	// 构建用于交互题的NsJail命令
 	cmd := exec.Command(

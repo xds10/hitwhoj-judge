@@ -34,7 +34,7 @@ type RunParams struct {
 	MemLimit      int64      `json:"mem_limit"`       // 内存限制（字节）
 	StackLimit    int64      `json:"stack_limit"`     // 栈限制（字节）
 	Config        TaskConfig `json:"config"`          // 评测配置
-	IsSpecial     bool       `json:"is_special"`      // 是否特殊评测
+	SpecialCode   *string    `json:"special_code"`    // 特殊评测代码（可选）
 	Code          string     `json:"code"`            // 用户代码
 	UserOut       string     `json:"user_out"`        // 用户输出
 	Answer        string     `json:"answer"`          // 期望输出
