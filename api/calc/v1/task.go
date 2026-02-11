@@ -7,7 +7,7 @@ type TaskReq struct {
 	ProcLimit           int64        `json:"proc_limit"`
 	CodeFile            string       `json:"code_file" binding:"required"`
 	CodeLanguage        string       `json:"code_language" binding:"required"`
-	IsSpecial           *bool        `json:"is_special" binding:"required"`
+	JudgeType           string       `json:"judge_type" binding:"required"`
 	SpecialCodeFile     string       `json:"special_code_file" `
 	SpecialCodeFileName string       `json:"special_code_file_name" `
 	Bucket              string       `json:"bucket" binding:"required"`

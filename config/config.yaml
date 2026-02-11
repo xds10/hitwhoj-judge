@@ -63,6 +63,7 @@ judge:
   enable_early_stop: "${JUDGE_EARLY_STOP:-false}"  # 遇到错误是否提前终止
   max_output_size: "${JUDGE_MAX_OUTPUT_SIZE:-10485760}"  # 最大输出大小（字节，默认10MB）
   enable_compile_cache: "${JUDGE_COMPILE_CACHE:-false}"  # 是否启用编译缓存
+  sandbox_path: "${JUDGE_SANDBOX_PATH:isolate}"  # 沙箱路径
   
 # 缓存配置
 cache:

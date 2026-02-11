@@ -14,9 +14,10 @@ const (
 type JudgeType = string
 
 const (
-	JudgeNormal  JudgeType = "normal"  // 普通评测
-	JudgeSpecial JudgeType = "special" // 特殊评测
-	JudgeIO      JudgeType = "io"      // IO比对评测
+	JudgeNormal      JudgeType = "normal"      // 普通评测
+	JudgeSpecial     JudgeType = "special"     // 特殊评测
+	JudgeIO          JudgeType = "io"          // IO比对评测
+	JudgeInteractive JudgeType = "interactive" // 交互题评测
 )
 
 // TaskConfig 评测任务配置
