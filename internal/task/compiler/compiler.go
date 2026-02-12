@@ -5,29 +5,15 @@ import (
 	"hitwh-judge/internal/constants"
 )
 
-type Language string
-
-const (
-	LanguageC      Language = "c"
-	LanguageCpp    Language = "cpp"
-	LanguageJava   Language = "java"
-	LanguagePython Language = "python"
-	LanguageGo     Language = "go"
-	LanguageJs     Language = "js"
-	LanguageHtml   Language = "html"
-	LanguageCss    Language = "css"
-	LanguageSql    Language = "sql"
-)
-
 // Compiler 编译器接口
 type Compiler interface {
 	Compile(codePath, exePath string) (string, error)
 }
 
 // NewCompiler 创建编译器实例
-func NewCompiler(lang Language) Compiler {
+func NewCompiler(lang constants.Language) Compiler {
 	switch lang {
-	case LanguageC:
+	case constants.LanguageC:
 		gccPath := conf.DefaultOptions.GCPath
 		if gccPath == "" {
 			gccPath = constants.GCCPath
@@ -35,20 +21,20 @@ func NewCompiler(lang Language) Compiler {
 		return &CCompiler{
 			GCPath: gccPath,
 		}
-	case LanguageCpp:
+	case constants.LanguageCpp:
 		return &CppCompiler{
 			GPPPath: constants.GPPPath,
 			Flags:   constants.GPPDefaultFlags,
 		}
-	case LanguageJava:
+	case constants.LanguageJava:
 		return &JavaCompiler{
 			JavacPath: constants.JavacPath,
 		}
-	case LanguagePython:
+	case constants.LanguagePython:
 		return &PythonCompiler{
 			PythonPath: constants.PythonPath,
 		}
-	case LanguageGo:
+	case constants.LanguageGo:
 		return &GoCompiler{
 			GoPath: constants.GoPath,
 		}

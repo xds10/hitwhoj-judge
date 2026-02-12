@@ -19,12 +19,27 @@ import (
 type IsoRunner struct {
 	IsolatePath string
 	boxId       int
+	SandboxPath string
 }
 
 // DefaultIsolateSandboxConfig 默认isolate沙箱配置
 var DefaultIsolateSandboxConfig = model.SandboxConfig{
 	Type: "isolate",
 	Path: "isolate",
+}
+
+func (ir *IsoRunner) InitSandbox() (string, error) {
+	currentBoxId := allocateBoxID()
+	ir.SetBoxId(currentBoxId)
+	// 初始化沙箱
+	initCmd := exec.Command(ir.IsolatePath, "--init", "--cg", fmt.Sprintf("--box-id=%d", ir.boxId))
+	initOutput, err := initCmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("初始化沙箱失败: %w", err)
+	}
+	sandboxPath := strings.TrimSpace(string(initOutput))
+	sandboxPath = filepath.Join(sandboxPath, "box")
+	return sandboxPath, nil
 }
 
 // RunInSandbox 在Isolate沙箱中运行程序

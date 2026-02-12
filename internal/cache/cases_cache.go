@@ -22,6 +22,7 @@ type EnhancedTestFileCache struct {
 	cacheDir     string // 本地缓存目录
 	maxDiskUsage int64  // 最大磁盘使用量（字节）
 	currentUsage int64  // 当前磁盘使用量
+	emptyFile    string // 空文件
 }
 
 type cachedFile struct {
@@ -41,19 +42,24 @@ var (
 func GetEnhancedTestFileCache() *EnhancedTestFileCache {
 	enhancedOnce.Do(func() {
 		// 创建本地缓存目录
-		cacheDir := "~/tmp/judge-cache-enhanced"
-		if err := os.MkdirAll(cacheDir, 0755); err != nil {
-			// 如果临时目录不可用，回退到系统临时目录
-			cacheDir = filepath.Join(os.TempDir(), "judge-cache-enhanced")
-			os.MkdirAll(cacheDir, 0755)
-		}
+		// cacheDir := "~/tmp/judge-cache-enhanced"
+		// if err := os.MkdirAll(cacheDir, 0755); err != nil {
+		// 如果临时目录不可用，回退到系统临时目录
+		cacheDir := filepath.Join(os.TempDir(), "judge-cache-enhanced")
+		os.MkdirAll(cacheDir, 0755)
+		// }
+
+		// 创建空文件
+		emptyFile := filepath.Join(cacheDir, "empty")
+		os.WriteFile(emptyFile, []byte{}, 0644)
 
 		enhancedInstance = &EnhancedTestFileCache{
 			cache:        make(map[string]*cachedFile),
 			ttl:          30 * time.Minute, // 默认缓存30分钟
 			cleanFreq:    10 * time.Minute, // 每10分钟清理一次过期数据
 			cacheDir:     cacheDir,
-			maxDiskUsage: 1024 * 1024 * 1024, // 默认最大2GB
+			maxDiskUsage: 1024 * 1024 * 1024, // 默认最大1GB
+			emptyFile:    emptyFile,
 		}
 		go enhancedInstance.startCleaner()
 	})
@@ -314,13 +320,8 @@ func (c *EnhancedTestFileCache) removeCacheEntry(bucket, md5 string) {
 // DownloadFileByMD5WithCache 使用缓存下载文件（返回文件路径）
 func (c *EnhancedTestFileCache) DownloadFileByMD5WithCache(bucket, md5 string) (string, error) {
 	if bucket == "" || md5 == "" {
-		// 当MD5为空时，创建一个空文件并返回其路径
-		tempFile, err := os.CreateTemp(c.cacheDir, "empty_file_")
-		if err != nil {
-			return "", err
-		}
-		defer tempFile.Close()
-		return tempFile.Name(), nil
+
+		return c.emptyFile, nil
 	}
 
 	// 先尝试从缓存获取文件路径

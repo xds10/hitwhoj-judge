@@ -15,13 +15,14 @@ type JudgeTask struct {
 	// UserID      int        `json:"user_id"`      // 用户ID
 	// ProblemID   int        `json:"problem_id"`   // 题目ID
 	// ContestID   *int       `json:"contest_id"`   // 比赛ID（可选）
-	TempDir     string     `json:"temp_dir"`     // 临时目录
-	Code        string     `json:"code"`         // 用户代码
-	Config      TaskConfig `json:"config"`       // 评测配置
-	TestCases   []TestCase `json:"test_cases"`   // 测试用例列表
-	FileBucket  string     `json:"file_bucket"`  // 文件存储桶名称
-	SpecialCode *string    `json:"special_code"` // 特殊评测代码（可选）
-	CreateTime  int64      `json:"create_time"`  // 任务创建时间戳
+	TempDir             string     `json:"temp_dir"`               // 临时目录
+	Code                string     `json:"code"`                   // 用户代码
+	Config              TaskConfig `json:"config"`                 // 评测配置
+	TestCases           []TestCase `json:"test_cases"`             // 测试用例列表
+	FileBucket          string     `json:"file_bucket"`            // 文件存储桶名称
+	SpecialCode         *string    `json:"special_code"`           // 特殊评测代码（可选）
+	SpecialCodeFileName *string    `json:"special_code_file_name"` // 特殊评测代码文件名（可选）
+	CreateTime          int64      `json:"create_time"`            // 任务创建时间戳
 }
 
 type RunParams struct {

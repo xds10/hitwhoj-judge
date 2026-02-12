@@ -14,6 +14,7 @@ const (
 
 // Runner 沙箱运行器接口
 type Runner interface {
+	InitSandbox() (string, error)
 	RunInSandbox(runParams model.RunParams) *model.TestCaseResult
 }
 
@@ -28,14 +29,6 @@ type RunResult struct {
 // NewRunner 创建沙箱运行器实例
 func NewRunner(sandboxType SandboxType, sandboxPath string) Runner {
 	switch sandboxType {
-	case NsJail:
-		return &NsJailRunner{
-			NsJailPath: sandboxPath,
-		}
-	case SDUSandbox:
-		return &SDUSandboxRunner{
-			SandboxPath: sandboxPath,
-		}
 	case Isolate:
 		return &IsoRunner{
 			IsolatePath: sandboxPath,

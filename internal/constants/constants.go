@@ -64,6 +64,33 @@ const (
 	BoxIDPoolSize = 500
 )
 
+type Language = string
+
+const (
+	LanguageC       Language = "c"
+	LanguageCpp     Language = "cpp"
+	LanguageJava    Language = "java"
+	LanguagePython  Language = "python"
+	LanguageGo      Language = "go"
+	LanguageJs      Language = "js"
+	LanguageHtml    Language = "html"
+	LanguageCss     Language = "css"
+	LanguageSql     Language = "sql"
+	LanguageRust    Language = "rust"
+	LanguagePHP     Language = "php"
+	LanguageRuby    Language = "ruby"
+	LanguageCSharp  Language = "cs"
+	LanguageSwift   Language = "swift"
+	LanguageKotlin  Language = "kt"
+	LanguageScala   Language = "scala"
+	LanguagePerl    Language = "pl"
+	LanguageLua     Language = "lua"
+	LanguageShell   Language = "sh"
+	LanguageObjC    Language = "m"
+	LanguageTs      Language = "ts"
+	LanguageUnknown Language = "unknown"
+)
+
 // 文件名常量
 const (
 	// 代码文件名

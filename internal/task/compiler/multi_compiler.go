@@ -130,11 +130,11 @@ func (g *GoCompiler) Compile(codePath, exePath string) (string, error) {
 }
 
 // GetCompilerFlags 获取编译器标志
-func GetCompilerFlags(lang Language) string {
+func GetCompilerFlags(lang constants.Language) string {
 	switch lang {
-	case LanguageC:
+	case constants.LanguageC:
 		return constants.GCCDefaultFlags
-	case LanguageCpp:
+	case constants.LanguageCpp:
 		return constants.GPPDefaultFlags
 	default:
 		return ""
@@ -144,11 +144,11 @@ func GetCompilerFlags(lang Language) string {
 // ValidateLanguage 验证语言是否支持
 func ValidateLanguage(lang string) bool {
 	supportedLanguages := []string{
-		string(LanguageC),
-		string(LanguageCpp),
-		string(LanguageJava),
-		string(LanguagePython),
-		string(LanguageGo),
+		string(constants.LanguageC),
+		string(constants.LanguageCpp),
+		string(constants.LanguageJava),
+		string(constants.LanguagePython),
+		string(constants.LanguageGo),
 	}
 
 	lang = strings.ToLower(lang)

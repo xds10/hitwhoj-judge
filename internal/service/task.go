@@ -7,9 +7,6 @@ import (
 	v1 "hitwh-judge/api/calc/v1"
 	"hitwh-judge/internal/cache"
 	"hitwh-judge/internal/model"
-	"hitwh-judge/internal/task/compiler"
-	"hitwh-judge/internal/task/language"
-	"hitwh-judge/internal/task/result"
 	"hitwh-judge/internal/task/runner"
 	file_util "hitwh-judge/internal/util/file"
 	"hitwh-judge/pkg/snowflake"
@@ -76,12 +73,13 @@ func AddTask(ctx context.Context, req *v1.TaskReq) (*model.JudgeResult, error) {
 	}
 
 	judgeTask := &model.JudgeTask{
-		TaskID:      taskId,
-		Config:      config,
-		Code:        req.CodeFile,
-		FileBucket:  req.Bucket,
-		SpecialCode: &req.SpecialCodeFile,
-		CreateTime:  time.Now().Unix(),
+		TaskID:              taskId,
+		Config:              config,
+		Code:                req.CodeFile,
+		FileBucket:          req.Bucket,
+		SpecialCode:         &req.SpecialCodeFile,
+		SpecialCodeFileName: &req.SpecialCodeFileName,
+		CreateTime:          time.Now().Unix(),
 	}
 
 	for _, checkPoint := range req.CheckPoints {
@@ -132,14 +130,22 @@ func AddTask(ctx context.Context, req *v1.TaskReq) (*model.JudgeResult, error) {
 	errChan := make(chan error, 1)
 
 	go func() {
-		if config.JudgeType != model.JudgeSpecial {
-			judgeResult, err := judge(&config, judgeTask)
+		switch config.JudgeType {
+		case model.JudgeNormal:
+			judgeResult, err := judgeNormal(&config, judgeTask)
 			if err != nil {
 				errChan <- err
 				return
 			}
 			resultChan <- judgeResult
-		} else {
+		case model.JudgeInteractive:
+			judgeResult, err := judgeInteractive(&config, judgeTask)
+			if err != nil {
+				errChan <- err
+				return
+			}
+			resultChan <- judgeResult
+		default:
 			errChan <- fmt.Errorf("暂不支持特殊评测")
 		}
 	}()
@@ -164,147 +170,6 @@ func AddTask(ctx context.Context, req *v1.TaskReq) (*model.JudgeResult, error) {
 	}
 }
 
-// judge 改进版的评测逻辑
-func judge(config *model.TaskConfig, task *model.JudgeTask) (*model.JudgeResult, error) {
-	startTime := time.Now()
-
-	// 1. 创建临时目录
-	tempDir, cleanup, err := createTmpDir()
-	if err != nil {
-		return nil, err
-	}
-	defer cleanup()
-	task.TempDir = tempDir
-
-	// 2. 写入用户代码
-	codeFileName := language.GetCodeFileName(config.Language)
-	codePath := filepath.Join(tempDir, codeFileName)
-	if err := os.WriteFile(codePath, []byte(task.Code), 0600); err != nil {
-		return nil, fmt.Errorf("写入代码文件失败: %w", err)
-	}
-
-	// 3. 编译代码
-	exePath := filepath.Join(tempDir, "main")
-	compilerInstance := compiler.NewCompiler(compiler.Language(config.Language))
-	compileErr, err := compilerInstance.Compile(codePath, exePath)
-	if err != nil {
-		zap.L().Warn("编译失败",
-			zap.Int64("task_id", task.TaskID),
-			zap.String("compile_err", compileErr),
-		)
-		return &model.JudgeResult{
-			TaskID: task.TaskID,
-			Status: model.StatusCE,
-			CompileResult: model.CompileResult{
-				Success: false,
-				Message: compileErr,
-			},
-			Error:      compileErr,
-			SubmitTime: time.Unix(task.CreateTime, 0),
-			JudgeTime:  time.Now(),
-		}, nil
-	}
-
-	// 4. 下载测试用例
-	if err := downloadCase(task); err != nil {
-		return nil, fmt.Errorf("下载测试用例失败: %w", err)
-	}
-
-	// 5. 运行所有测试用例
-	var caseResults []model.TestCaseResult
-	var maxMemUsed uint64
-	var totalTimeUsed time.Duration
-	finalStatus := model.StatusAC // 默认AC，遇到错误则更新
-
-	for i, checkPoint := range task.TestCases {
-		runParams := model.RunParams{
-			TaskID:        task.TaskID,
-			TestCaseIndex: i,
-			ExePath:       exePath,
-			Input:         checkPoint.Input,
-			InputFile:     checkPoint.InputFile,
-			TimeLimit:     int64(config.TimeLimit),
-			MemLimit:      int64(config.MemoryLimit),
-			Config:        *config,
-			SpecialCode:   task.SpecialCode,
-		}
-
-		testCaseResult, err := runSandboxSafe(runParams)
-		if err != nil {
-			// 沙箱运行出错，标记为系统错误
-			testCaseResult = &model.TestCaseResult{
-				TestCaseIndex: i,
-				Status:        model.StatusSE,
-				Error:         err.Error(),
-				Expected:      checkPoint.Output,
-			}
-		} else {
-			testCaseResult.Expected = checkPoint.Output
-		}
-
-		// 6. 对比输出（仅当运行状态为AC时）
-		if testCaseResult.Status == model.StatusAC {
-			comparator := result.NewComparator(false)
-			if comparator.Compare(testCaseResult.Output, checkPoint.Output) {
-				testCaseResult.Status = model.StatusAC
-			} else {
-				testCaseResult.Status = model.StatusWA
-				testCaseResult.Error = "输出不匹配"
-				// 只在日志中记录详细差异，避免返回过大数据
-				zap.L().Debug("输出不匹配",
-					zap.Int("case", i),
-					zap.String("expected", truncateString(checkPoint.Output, 100)),
-					zap.String("actual", truncateString(testCaseResult.Output, 100)),
-				)
-			}
-		}
-
-		// 更新统计信息
-		if testCaseResult.MemUsed > maxMemUsed {
-			maxMemUsed = testCaseResult.MemUsed
-		}
-		totalTimeUsed += testCaseResult.TimeUsed
-
-		// 更新最终状态（优先级：SE > CE > RE > TLE > MLE > WA > AC）
-		finalStatus = updateFinalStatus(finalStatus, testCaseResult.Status)
-
-		caseResults = append(caseResults, *testCaseResult)
-
-		// 如果不是AC，可以选择是否继续运行后续测试点（可配置）
-		// if testCaseResult.Status != model.StatusAC {
-		// 	break // 提前终止评测
-		// }
-	}
-
-	// 7. 构建最终结果
-	judgeResult := &model.JudgeResult{
-		TaskID:        task.TaskID,
-		Status:        finalStatus,
-		TotalScore:    calculateScore(caseResults),
-		TotalTimeUsed: totalTimeUsed,
-		TotalMemUsed:  maxMemUsed,
-		CompileResult: model.CompileResult{
-			Success: true,
-			Message: "编译成功",
-		},
-		TestResults: caseResults,
-		SubmitTime:  time.Unix(task.CreateTime, 0),
-		JudgeTime:   time.Now(),
-	}
-
-	// 记录评测耗时
-	judgeDuration := time.Since(startTime)
-	zap.L().Info("评测完成",
-		zap.Int64("task_id", task.TaskID),
-		zap.String("status", finalStatus),
-		zap.Int("total_cases", len(caseResults)),
-		zap.Int("ac_cases", countACCases(caseResults)),
-		zap.Duration("judge_duration", judgeDuration),
-	)
-
-	return judgeResult, nil
-}
-
 // runSandboxSafe 安全地运行沙箱，捕获panic
 func runSandboxSafe(runParams model.RunParams) (result *model.TestCaseResult, err error) {
 	defer func() {
@@ -322,16 +187,16 @@ func runSandboxSafe(runParams model.RunParams) (result *model.TestCaseResult, er
 
 	// 根据评测类型选择不同的沙箱
 	switch runParams.Config.JudgeType {
-	case model.JudgeInteractive:
-		// 交互题使用nsjail沙箱的特殊方法
-		nsJail := runner.GetDefaultSandboxConfig(runner.NsJail)
-		nsjailSandBox := runner.NewRunner(runner.NsJail, nsJail.Path)
-		// 将普通的Runner转换为NsJailRunner以调用交互方法
-		if nsjailRunner, ok := nsjailSandBox.(*runner.NsJailRunner); ok {
-			testCaseResult = nsjailRunner.RunInteractiveInSandbox(runParams)
-		} else {
-			return nil, fmt.Errorf("无法转换为NsJailRunner类型")
-		}
+	// case model.JudgeInteractive:
+	// 	// 交互题使用nsjail沙箱的特殊方法
+	// 	nsJail := runner.GetDefaultSandboxConfig(runner.NsJail)
+	// 	nsjailSandBox := runner.NewRunner(runner.NsJail, nsJail.Path)
+	// 	// 将普通的Runner转换为NsJailRunner以调用交互方法
+	// 	if nsjailRunner, ok := nsjailSandBox.(*runner.NsJailRunner); ok {
+	// 		testCaseResult = nsjailRunner.RunInteractiveInSandbox(runParams)
+	// 	} else {
+	// 		return nil, fmt.Errorf("无法转换为NsJailRunner类型")
+	// 	}
 	default:
 		// 其他类型使用isolate沙箱
 		isolate := runner.GetDefaultSandboxConfig(runner.Isolate)
