@@ -7,6 +7,7 @@ import (
 	"hitwh-judge/internal/task/compiler"
 	"hitwh-judge/internal/task/language"
 	"hitwh-judge/internal/task/result"
+	"hitwh-judge/internal/task/runner"
 	"os"
 	"path/filepath"
 	"time"
@@ -98,18 +99,19 @@ func judgeInteractive(config *model.TaskConfig, task *model.JudgeTask) (*model.J
 
 	for i, checkPoint := range task.TestCases {
 		runParams := model.RunParams{
-			TaskID:        task.TaskID,
-			TestCaseIndex: i,
-			ExePath:       exePath,
-			Input:         checkPoint.Input,
-			InputFile:     checkPoint.InputFile,
-			TimeLimit:     int64(config.TimeLimit),
-			MemLimit:      int64(config.MemoryLimit),
-			Config:        *config,
-			SpecialCode:   task.SpecialCode,
+			TaskID:         task.TaskID,
+			TestCaseIndex:  i,
+			ExePath:        exePath,
+			Input:          checkPoint.Input,
+			InputFile:      checkPoint.InputFile,
+			Answer:         checkPoint.Output,
+			TimeLimit:      int64(config.TimeLimit),
+			MemLimit:       int64(config.MemoryLimit),
+			Config:         *config,
+			SpecialExePath: specialExePath,
 		}
 
-		testCaseResult, err := runSandboxSafe(runParams)
+		testCaseResult, err := runInteractive(runParams)
 		if err != nil {
 			// 沙箱运行出错，标记为系统错误
 			testCaseResult = &model.TestCaseResult{
@@ -245,7 +247,6 @@ func judgeNormal(config *model.TaskConfig, task *model.JudgeTask) (*model.JudgeR
 			TimeLimit:     int64(config.TimeLimit),
 			MemLimit:      int64(config.MemoryLimit),
 			Config:        *config,
-			SpecialCode:   task.SpecialCode,
 		}
 
 		testCaseResult, err := runSandboxSafe(runParams)
@@ -331,4 +332,112 @@ func compileCode(tmpDir string, srcFile string, dstFile string, language string)
 		return compileErr, err
 	}
 	return compileErr, err
+}
+
+// runSandboxSafe 安全地运行沙箱，捕获panic
+func runSandboxSafe(runParams model.RunParams) (result *model.TestCaseResult, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("沙箱运行panic: %v", r)
+			result = &model.TestCaseResult{
+				TestCaseIndex: runParams.TestCaseIndex,
+				Status:        model.StatusSE,
+				Error:         fmt.Sprintf("系统错误: %v", r),
+			}
+		}
+	}()
+
+	var testCaseResult *model.TestCaseResult
+
+	// 根据评测类型选择不同的沙箱
+	switch runParams.Config.JudgeType {
+	// case model.JudgeInteractive:
+	// 	// 交互题使用nsjail沙箱的特殊方法
+	// 	nsJail := runner.GetDefaultSandboxConfig(runner.NsJail)
+	// 	nsjailSandBox := runner.NewRunner(runner.NsJail, nsJail.Path)
+	// 	// 将普通的Runner转换为NsJailRunner以调用交互方法
+	// 	if nsjailRunner, ok := nsjailSandBox.(*runner.NsJailRunner); ok {
+	// 		testCaseResult = nsjailRunner.RunInteractiveInSandbox(runParams)
+	// 	} else {
+	// 		return nil, fmt.Errorf("无法转换为NsJailRunner类型")
+	// 	}
+	default:
+		// 其他类型使用isolate沙箱
+		isolate := runner.GetDefaultSandboxConfig(runner.Isolate)
+		isolateSandBox := runner.NewRunner(runner.Isolate, isolate.Path)
+		testCaseResult = isolateSandBox.RunInSandbox(runParams)
+
+		// isolate := runner.GetDefaultSandboxConfig(runner.NsJail)
+		// isolateSandBox := runner.NewRunner(runner.NsJail, isolate.Path)
+		// testCaseResult = isolateSandBox.RunInSandbox(runParams)
+	}
+
+	if testCaseResult == nil {
+		return nil, fmt.Errorf("沙箱返回结果为空")
+	}
+
+	if testCaseResult.Error != "" {
+		// 有错误信息但不一定是致命错误，返回结果让上层判断
+		zap.L().Warn("沙箱运行有错误信息",
+			zap.Int("case", runParams.TestCaseIndex),
+			zap.String("error", testCaseResult.Error),
+			zap.String("status", testCaseResult.Status),
+		)
+	}
+
+	return testCaseResult, nil
+}
+
+// runSandboxSafe 安全地运行沙箱，捕获panic
+func runInteractive(runParams model.RunParams) (result *model.TestCaseResult, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("沙箱运行panic: %v", r)
+			result = &model.TestCaseResult{
+				TestCaseIndex: runParams.TestCaseIndex,
+				Status:        model.StatusSE,
+				Error:         fmt.Sprintf("系统错误: %v", r),
+			}
+		}
+	}()
+
+	var testCaseResult *model.TestCaseResult
+
+	// 根据评测类型选择不同的沙箱
+	switch runParams.Config.JudgeType {
+	// case model.JudgeInteractive:
+	// 	// 交互题使用nsjail沙箱的特殊方法
+	// 	nsJail := runner.GetDefaultSandboxConfig(runner.NsJail)
+	// 	nsjailSandBox := runner.NewRunner(runner.NsJail, nsJail.Path)
+	// 	// 将普通的Runner转换为NsJailRunner以调用交互方法
+	// 	if nsjailRunner, ok := nsjailSandBox.(*runner.NsJailRunner); ok {
+	// 		testCaseResult = nsjailRunner.RunInteractiveInSandbox(runParams)
+	// 	} else {
+	// 		return nil, fmt.Errorf("无法转换为NsJailRunner类型")
+	// 	}
+	default:
+		// 其他类型使用isolate沙箱
+		isolate := runner.GetDefaultSandboxConfig(runner.Isolate)
+		isolateSandBox := runner.NewRunner(runner.Isolate, isolate.Path)
+		testCaseResult = isolateSandBox.RunInteractiveInSandbox(runParams)
+
+		// isolate := runner.GetDefaultSandboxConfig(runner.NsJail)
+		// isolateSandBox := runner.NewRunner(runner.NsJail, isolate.Path)
+		// testCaseResult = isolateSandBox.RunInSandbox(runParams)
+	}
+
+	if testCaseResult == nil {
+		return nil, fmt.Errorf("沙箱返回结果为空")
+	}
+
+	if testCaseResult.Error != "" {
+		// 有错误信息但不一定是致命错误，返回结果让上层判断
+		zap.L().Warn("沙箱运行有错误信息",
+			zap.Int("case", runParams.TestCaseIndex),
+			zap.String("error", testCaseResult.Error),
+			zap.String("status", testCaseResult.Status),
+		)
+	}
+
+	return testCaseResult, nil
 }

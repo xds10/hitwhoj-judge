@@ -16,6 +16,7 @@ const (
 type Runner interface {
 	InitSandbox() (string, error)
 	RunInSandbox(runParams model.RunParams) *model.TestCaseResult
+	RunInteractiveInSandbox(runParams model.RunParams) *model.TestCaseResult
 }
 
 // RunResult 异步运行结果

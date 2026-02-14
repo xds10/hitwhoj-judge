@@ -15,6 +15,7 @@ const (
 	StatusMLE     JudgeStatus = "MLE"     // 内存超限
 	StatusRE      JudgeStatus = "RE"      // 运行时错误
 	StatusSE      JudgeStatus = "SE"      // 系统错误
+	StatusPE      JudgeStatus = "PE"      // 格式错误
 )
 
 // CompileResult 编译结果

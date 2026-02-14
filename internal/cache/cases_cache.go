@@ -38,6 +38,10 @@ var (
 	enhancedOnce     sync.Once
 )
 
+func GetEmptyFile() string {
+	return enhancedInstance.emptyFile
+}
+
 // GetEnhancedTestFileCache 获取增强版单例缓存实例
 func GetEnhancedTestFileCache() *EnhancedTestFileCache {
 	enhancedOnce.Do(func() {

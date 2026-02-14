@@ -7,7 +7,6 @@ import (
 	v1 "hitwh-judge/api/calc/v1"
 	"hitwh-judge/internal/cache"
 	"hitwh-judge/internal/model"
-	"hitwh-judge/internal/task/runner"
 	file_util "hitwh-judge/internal/util/file"
 	"hitwh-judge/pkg/snowflake"
 	"os"
@@ -168,60 +167,6 @@ func AddTask(ctx context.Context, req *v1.TaskReq) (*model.JudgeResult, error) {
 		GetGlobalMetrics().RecordFailure()
 		return nil, fmt.Errorf("评测超时（超过%v）", MaxJudgeTimeout)
 	}
-}
-
-// runSandboxSafe 安全地运行沙箱，捕获panic
-func runSandboxSafe(runParams model.RunParams) (result *model.TestCaseResult, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			err = fmt.Errorf("沙箱运行panic: %v", r)
-			result = &model.TestCaseResult{
-				TestCaseIndex: runParams.TestCaseIndex,
-				Status:        model.StatusSE,
-				Error:         fmt.Sprintf("系统错误: %v", r),
-			}
-		}
-	}()
-
-	var testCaseResult *model.TestCaseResult
-
-	// 根据评测类型选择不同的沙箱
-	switch runParams.Config.JudgeType {
-	// case model.JudgeInteractive:
-	// 	// 交互题使用nsjail沙箱的特殊方法
-	// 	nsJail := runner.GetDefaultSandboxConfig(runner.NsJail)
-	// 	nsjailSandBox := runner.NewRunner(runner.NsJail, nsJail.Path)
-	// 	// 将普通的Runner转换为NsJailRunner以调用交互方法
-	// 	if nsjailRunner, ok := nsjailSandBox.(*runner.NsJailRunner); ok {
-	// 		testCaseResult = nsjailRunner.RunInteractiveInSandbox(runParams)
-	// 	} else {
-	// 		return nil, fmt.Errorf("无法转换为NsJailRunner类型")
-	// 	}
-	default:
-		// 其他类型使用isolate沙箱
-		isolate := runner.GetDefaultSandboxConfig(runner.Isolate)
-		isolateSandBox := runner.NewRunner(runner.Isolate, isolate.Path)
-		testCaseResult = isolateSandBox.RunInSandbox(runParams)
-
-		// isolate := runner.GetDefaultSandboxConfig(runner.NsJail)
-		// isolateSandBox := runner.NewRunner(runner.NsJail, isolate.Path)
-		// testCaseResult = isolateSandBox.RunInSandbox(runParams)
-	}
-
-	if testCaseResult == nil {
-		return nil, fmt.Errorf("沙箱返回结果为空")
-	}
-
-	if testCaseResult.Error != "" {
-		// 有错误信息但不一定是致命错误，返回结果让上层判断
-		zap.L().Warn("沙箱运行有错误信息",
-			zap.Int("case", runParams.TestCaseIndex),
-			zap.String("error", testCaseResult.Error),
-			zap.String("status", testCaseResult.Status),
-		)
-	}
-
-	return testCaseResult, nil
 }
 
 // updateFinalStatus 更新最终状态（按优先级）
