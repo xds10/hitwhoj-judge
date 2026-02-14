@@ -67,7 +67,7 @@ func GetCodeFileName(lang string) string {
 	switch lang {
 	case "C":
 		return "main.c"
-	case "Cpp":
+	case "cpp":
 		return "main.cpp"
 	case "Python":
 		return "main.py"

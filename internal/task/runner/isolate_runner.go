@@ -310,8 +310,8 @@ func (ir *IsoRunner) RunInteractiveInSandbox(runParams model.RunParams) *model.T
 	// }()
 
 	// 获取交互题评测脚本路径
-	scriptSrcPath := "./scripts/runner/interactive_run.py"
-	scriptDstPath := filepath.Join(sandboxPath, "interactive_run.py")
+	scriptSrcPath := "./scripts/runner/interactive_judge.sh"
+	scriptDstPath := filepath.Join(sandboxPath, "interactive_judge.sh")
 
 	scriptContent, err := ioutil.ReadFile(scriptSrcPath)
 	if err != nil {
@@ -357,20 +357,22 @@ func (ir *IsoRunner) RunInteractiveInSandbox(runParams model.RunParams) *model.T
 	}
 
 	// 创建输入、输出和答案文件
-	inputPath := filepath.Join(sandboxPath, "input.txt")
 	outputPath := filepath.Join(sandboxPath, "output.txt")
 	answerPath := filepath.Join(sandboxPath, "answer.txt")
 
-	if err := ioutil.WriteFile(inputPath, []byte(runParams.Input), 0644); err != nil {
+	// 复制输入文件到沙箱目录
+	inputFilename := filepath.Base(runParams.InputFile)
+	destInputPath := filepath.Join(sandboxPath, inputFilename)
+	cpInputCmd := exec.Command("cp", runParams.InputFile, destInputPath)
+	if err := cpInputCmd.Run(); err != nil {
 		return &model.TestCaseResult{
 			TestCaseIndex: runParams.TestCaseIndex,
 			Status:        model.StatusSE,
-			Error:         fmt.Sprintf("创建输入文件失败: %v", err),
+			Error:         fmt.Sprintf("复制输入文件到沙箱失败: %v", err),
 		}
 	}
-
 	// 创建空输出文件
-	if err := ioutil.WriteFile(outputPath, []byte{}, 0644); err != nil {
+	if err := ioutil.WriteFile(outputPath, []byte{}, 0666); err != nil {
 		return &model.TestCaseResult{
 			TestCaseIndex: runParams.TestCaseIndex,
 			Status:        model.StatusSE,
@@ -379,7 +381,7 @@ func (ir *IsoRunner) RunInteractiveInSandbox(runParams model.RunParams) *model.T
 	}
 
 	// 创建答案文件
-	if err := ioutil.WriteFile(answerPath, []byte(answer), 0644); err != nil {
+	if err := ioutil.WriteFile(answerPath, []byte(answer), 0666); err != nil {
 		return &model.TestCaseResult{
 			TestCaseIndex: runParams.TestCaseIndex,
 			Status:        model.StatusSE,
@@ -401,13 +403,13 @@ func (ir *IsoRunner) RunInteractiveInSandbox(runParams model.RunParams) *model.T
 		fmt.Sprintf("--mem=%d", memoryLimit*1024*2),         // 内存限制（KB）
 		"--meta=meta.txt", // 输出元数据
 		"--",
-		"/usr/bin/python3",
-		"interactive_run.py",
-		specialExeFilename, // 评测程序 (b.out)
-		"input.txt",        // 额外参数
-		"answer.txt",       // 输出文件
-		"--",               // 分隔符
-		exeFilename,        // 选手程序 (a.out)
+		"/bin/bash",
+		"./interactive_judge.sh",
+		"./" + specialExeFilename, // 评测程序 (b.out)
+		inputFilename,             // 额外参数
+		"answer.txt",              // 输出文件
+		"--",                      // 分隔符
+		"./" + exeFilename,        // 选手程序 (a.out)
 	}
 
 	// 创建执行命令

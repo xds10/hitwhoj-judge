@@ -66,7 +66,7 @@ func judgeInteractive(config *model.TaskConfig, task *model.JudgeTask) (*model.J
 
 	if task.Config.JudgeType != model.JudgeNormal {
 		specialExePath = filepath.Join(tempDir, "special_main")
-		compileErr, err = compileCode(tempDir, specialCodePath, specialExePath, specialCodeLanguage)
+		compileErr, err = compileCode(specialCodePath, specialExePath, specialCodeLanguage)
 		if err != nil {
 			zap.L().Warn("编译特殊评测代码失败",
 				zap.Int64("task_id", task.TaskID),
@@ -325,7 +325,7 @@ func judgeNormal(config *model.TaskConfig, task *model.JudgeTask) (*model.JudgeR
 	return judgeResult, nil
 }
 
-func compileCode(tmpDir string, srcFile string, dstFile string, language string) (string, error) {
+func compileCode(srcFile string, dstFile string, language string) (string, error) {
 	compilerInstance := compiler.NewCompiler(constants.Language(language))
 	compileErr, err := compilerInstance.Compile(srcFile, dstFile)
 	if err != nil {
